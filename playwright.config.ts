@@ -45,7 +45,7 @@ export default defineConfig({
     headless: true,
 
     launchOptions: {
-      slowMo: 200,
+      slowMo: 800,
     },
 
     // Sets the default viewport size for all tests
