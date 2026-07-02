@@ -72,7 +72,11 @@ test(
     await page.getByRole("button", { name: "Save Changes" }).last().click();
 
     // ─── Test #10 — Replace File ───
-    await page.getByRole("link", { name: "sample-dataset-file.txt" }).click();
+    // Use exact:true to avoid matching the "Preview" button whose accessible
+    // name also contains the filename (strict-mode violation otherwise).
+    await page
+      .getByRole("link", { name: "sample-dataset-file.txt", exact: true })
+      .click();
     await page.getByRole("button", { name: "Edit File" }).click();
     await page.getByRole("link", { name: "Replace" }).click();
     await page
