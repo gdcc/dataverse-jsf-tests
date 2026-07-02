@@ -62,6 +62,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Compile playwright.config.ts → playwright.config.js so it can be
+      # loaded by Node when the package is installed under node_modules/
+      # (Node refuses to type-strip .ts files inside node_modules/).
+      - name: Compile playwright.config.ts
+        run: npx tsc -p tsconfig.build.json
+
       # --provenance attaches a signed SLSA provenance attestation.
       - name: Publish package
         run: npm publish --provenance --access public
