@@ -1,5 +1,5 @@
 # Section-2 runtime state (dataverse identifier written by 03-create-dataverse)
-tests/suite/.s2-dataverse-id
+.s2-dataverse-id
 
 # Logs
 logs
