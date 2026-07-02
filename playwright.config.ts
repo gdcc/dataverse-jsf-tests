@@ -38,8 +38,11 @@ export default defineConfig({
      run one at a time because workers is 1. */
   workers: 1,
   fullyParallel: false,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters
+   * - "list"   → prints per-test pass/fail status live to stdout (visible in CI logs)
+   * - "html"   → generates the HTML report artifact uploaded at the end of the job
+   */
+  reporter: [["list"], ["html"]],
   /* Shared settings for all projects. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     headless: true,
