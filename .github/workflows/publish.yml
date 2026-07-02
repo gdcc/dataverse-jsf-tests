@@ -1,13 +1,19 @@
 name: Publish to npm
 
-# Trigger: push a tag matching the versioning scheme:
-#   6.10.1, 6.10.2, 6.11.0, 7.0.0, 7.0.1 …
+# Trigger: push a 4-part tag encoding the target Dataverse version and a
+# suite patch counter.
+#
+#   Format:  DV_MAJOR.DV_MINOR.DV_PATCH.SUITE_PATCH
+#   Example: 6.10.1.1  →  Dataverse 6.10.1, first suite release
+#            6.10.1.2  →  Dataverse 6.10.1, second suite release
+#            6.11.0.1  →  Dataverse 6.11.0, first suite release
+#
 # Create a release tag with:
-#   git tag 6.10.1 && git push origin 6.10.1
+#   git tag 6.10.1.1 && git push origin 6.10.1.1
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   publish:
@@ -21,28 +27,51 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Match the Node version used locally; update the `node-version` field
-      # if the project ever upgrades.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      # Sync the package.json version to the Git tag so the two are never out
-      # of step. The tag is the source of truth; package.json is updated in-place
-      # in the checkout before packing — nothing is committed back to Git.
-      - name: Align package.json version to tag
+      # Parse the 4-part tag and derive:
+      #   NPM_VERSION  — valid 3-part semver published to the registry
+      #                  DV_MAJOR.DV_MINOR.(DV_PATCH * 100 + SUITE_PATCH)
+      #                  e.g. 6.10.1.1 → 6.10.101
+      #                       6.10.1.2 → 6.10.102
+      #                       6.11.0.1 → 6.11.1
+      #
+      #   DV_DIST_TAG  — dist-tag that always points at the latest suite
+      #                  build for this Dataverse version
+      #                  e.g. 6.10.1.1 → dv-6.10.1
+      #                       6.11.0.1 → dv-6.11.0
+      - name: Derive npm version and dist-tag from Git tag
         run: |
           TAG="${GITHUB_REF_NAME}"
-          npm version "$TAG" --no-git-tag-version
+          IFS='.' read -r DV_MAJOR DV_MINOR DV_PATCH SUITE_PATCH <<< "$TAG"
+          NPM_PATCH=$(( DV_PATCH * 100 + SUITE_PATCH ))
+          NPM_VERSION="${DV_MAJOR}.${DV_MINOR}.${NPM_PATCH}"
+          DV_DIST_TAG="dv-${DV_MAJOR}.${DV_MINOR}.${DV_PATCH}"
+          echo "NPM_VERSION=${NPM_VERSION}"   >> "$GITHUB_ENV"
+          echo "DV_DIST_TAG=${DV_DIST_TAG}"   >> "$GITHUB_ENV"
+          echo "Derived npm version : ${NPM_VERSION}"
+          echo "Derived dist-tag    : ${DV_DIST_TAG}"
+
+      - name: Align package.json version to derived npm version
+        run: npm version "$NPM_VERSION" --no-git-tag-version
 
       - name: Install dependencies
         run: npm ci
 
-      # --provenance attaches a signed SLSA provenance attestation to the
-      # published package (requires id-token: write above).
+      # --provenance attaches a signed SLSA provenance attestation.
       - name: Publish package
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Move the DV-version dist-tag to this newly published version so that
+      # `npm install kunai-runner@dv-6.10.1` always resolves to the latest
+      # suite build for Dataverse 6.10.1.
+      - name: Update dist-tag
+        run: npm dist-tag add "kunai-runner@${NPM_VERSION}" "${DV_DIST_TAG}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

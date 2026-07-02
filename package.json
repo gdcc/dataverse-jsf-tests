@@ -1,6 +1,6 @@
 {
   "name": "kunai-runner",
-  "version": "6.10.1",
+  "version": "0.0.0",
   "description": "High-performance Dataverse Playwright frontend testing framework and E2E automation scaffolding.",
   "directories": {
     "doc": "docs",
