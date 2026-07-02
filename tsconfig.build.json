@@ -8,7 +8,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "outDir": ".",
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "noEmitOnError": false
   },
-  "include": ["playwright.config.ts"]
+  "files": ["playwright.config.ts"]
 }
