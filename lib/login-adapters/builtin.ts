@@ -6,23 +6,39 @@ import type { LoginAdapter, LoginCredentials } from "./types";
  *
  * Logs in using Dataverse's **built-in** Username/Email form.
  *
- * Flow (on /loginpage.xhtml):
- *   1. Click the "Username/Email" button to reveal the built-in credential form
- *   2. Fill #loginForm:credentialsContainer:0:credValue  (username / email)
- *   3. Fill #loginForm:credentialsContainer:1:sCredValue (password)
- *   4. Click the "Log In" button
- *   5. Wait until the login page URL is gone
+ * Two possible flows are handled (both resolved on /loginpage.xhtml):
  *
- * NOTE: credentials for this adapter are not currently verified against a
- * live instance.  The selectors were provided directly from the Dataverse
- * login page source.
+ * A) Button-gated form — the "Username/Email" button must be clicked first to
+ *    reveal the credential inputs before they can be filled.
+ *
+ * B) Direct form — the credential inputs are already visible on arrival
+ *    (detected by the presence of the "Forgot your password?" string on the
+ *    page).  In this case the button is skipped and the form is filled
+ *    immediately.
+ *
+ * Common tail (both flows):
+ *   • Fill #loginForm:credentialsContainer:0:credValue  (username / email)
+ *   • Fill #loginForm:credentialsContainer:1:sCredValue (password)
+ *   • Click the "Log In" button
+ *   • Wait until the login page URL is gone
  */
 export class BuiltinAdapter implements LoginAdapter {
   async login(page: Page, credentials: LoginCredentials): Promise<void> {
     await page.waitForURL(/loginpage/);
 
-    // Reveal the built-in username/password form
-    await page.getByRole("button", { name: "Username/Email" }).click();
+    // Determine whether the credential form is already exposed or hidden
+    // behind the "Username/Email" button.  "Forgot your password?" is present
+    // only when the username/password inputs are directly on the page.
+    const forgotPasswordVisible = await page
+      .getByText("Forgot your password?")
+      .isVisible()
+      .catch(() => false);
+
+    if (!forgotPasswordVisible) {
+      // Flow A: reveal the built-in username/password form first
+      await page.getByRole("button", { name: "Username/Email" }).click();
+    }
+    // Flow B: form is already visible — proceed directly to filling
 
     await page
       .locator("#loginForm\\:credentialsContainer\\:0\\:credValue")
