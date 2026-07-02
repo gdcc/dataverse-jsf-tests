@@ -12,7 +12,6 @@ tests/suite/.s2-dataverse-id
 # ── Sensitive / local config ──────────────────────────────────────────────────
 .env
 .env.*
-sensitive-data/
 
 # ── CI / GitHub infra ─────────────────────────────────────────────────────────
 .github/

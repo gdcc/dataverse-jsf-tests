@@ -151,5 +151,5 @@ vite.config.ts.timestamp-*
 # MacOS
 .DS_Store
 
-# Sensitive Data
+# Sensitive Data (deprecated — use DV_USERNAME/DV_PASSWORD/DV_FULL_NAME in .env instead)
 sensitive-data/
