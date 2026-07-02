@@ -5,16 +5,13 @@ kunai-runner is the foundational open-source automation engine and testing scaff
 
 ## Steps to Use Kunai Runner
 1. Clone the git repository into an empty folder
-2. cd into the working directory, i.e., the root directory where playwright.config.js exists
-3. cp .env.example .env
-4. Fill .env with your installation specific details and login adapters
-5. mkdir -p sensitive-data && touch my_folder/user.json
-6. Fill user.json as follows according to your installation and login mechanism:
-```json
-{
-  "username": "username",
-  "password": "password",
-  "full_name": "Full Name"
-}
-```
-7. Run `npx playwright test`
+2. `cd` into the working directory (the root directory where `playwright.config.ts` exists)
+3. `cp .env.example .env`
+4. Fill `.env` with your installation-specific values:
+   - `BASE_URL` — the Dataverse instance URL
+   - `DV_USERNAME` / `DV_PASSWORD` / `DV_FULL_NAME` — login credentials and navbar display name
+   - `LOGIN_ADAPTER` — authentication flow (`shibboleth-direct`, `incommon-seamlessaccess`, or `builtin`)
+   - See `.env.example` for all available options
+5. `npm install`
+6. `npx playwright install`
+7. `npx playwright test`
