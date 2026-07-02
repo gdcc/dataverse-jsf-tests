@@ -89,7 +89,7 @@ https://dataverse-plus-staging.rdmc.unc.edu
 **Before each run** the setup step:
 1. Loads the saved cookies (if the file exists) into the browser context
 2. Navigates to the homepage
-3. Checks whether the user's `full_name` (from `sensitive-data/user.json`) is visible inside the navbar user display element
+3. Checks whether `DV_FULL_NAME` is visible inside the navbar user display element
 4. If visible → session is live, authentication skipped
 5. If not visible → runs the full adapter login flow and saves fresh cookies
 
@@ -97,20 +97,18 @@ This means the Duo push only needs to be approved once per valid cookie window.
 
 ---
 
-## Sensitive Data File
+## Credentials
 
-`sensitive-data/user.json` (gitignored):
+Credentials are supplied via `.env` (gitignored, never committed):
 
-```json
-{
-  "username": "your-onyen",
-  "password": "your-password",
-  "full_name": "Your Full Name"
-}
+```dotenv
+DV_USERNAME=your-onyen
+DV_PASSWORD=your-password
+DV_FULL_NAME=Your Full Name
 ```
 
-- `username` / `password` — credentials for the target Dataverse instance via the configured adapter
-- `full_name` — the display name Dataverse shows in the navbar after login (used to detect an existing session)
+- `DV_USERNAME` / `DV_PASSWORD` — credentials for the target Dataverse instance via the configured adapter
+- `DV_FULL_NAME` — the display name Dataverse shows in the navbar after login (used to detect an existing session)
 
 ---
 
