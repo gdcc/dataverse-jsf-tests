@@ -48,7 +48,7 @@ export class BuiltinAdapter implements LoginAdapter {
       .locator("#loginForm\\:credentialsContainer\\:1\\:sCredValue")
       .fill(credentials.password);
 
-    await page.getByRole("button", { name: "Log In" }).click();
+    await page.locator("#loginForm\\:login").click();
 
     // Wait until we have left the login page
     await page.waitForURL((url) => !/loginpage/.test(url.href), {
