@@ -1,0 +1,51 @@
+{
+  "name": "kunai-runner",
+  "version": "6.10.1",
+  "description": "High-performance Dataverse Playwright frontend testing framework and E2E automation scaffolding.",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "files": [
+    "lib/",
+    "tests/",
+    "scripts/",
+    "docs/",
+    "playwright.config.ts",
+    "tsconfig.json",
+    ".env.example",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uncch-rdmc/kunai-runner.git"
+  },
+  "keywords": [
+    "playwright",
+    "dataverse",
+    "e2e",
+    "testing"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/uncch-rdmc/kunai-runner/issues"
+  },
+  "homepage": "https://github.com/uncch-rdmc/kunai-runner#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "typescript": "^6.0.3"
+  }
+}
