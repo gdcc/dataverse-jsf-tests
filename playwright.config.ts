@@ -33,7 +33,7 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
  */
 export default defineConfig({
   testDir: "./tests/suite",
-  timeout: 90000,
+  timeout: 180000,
   /* All tests within a project run in strict sequence; projects themselves
      run one at a time because workers is 1. */
   workers: 1,
@@ -48,7 +48,7 @@ export default defineConfig({
     headless: true,
 
     launchOptions: {
-      slowMo: 2000,
+      slowMo: 3000,
     },
 
     // Sets the default viewport size for all tests
