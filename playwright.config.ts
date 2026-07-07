@@ -52,7 +52,7 @@ export default defineConfig({
     },
 
     // Sets the default viewport size for all tests
-    viewport: { width: 1920, height: 1080 },
+    viewport: { width: 1280, height: 720 },
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on",
@@ -60,7 +60,7 @@ export default defineConfig({
     /* Always collect video and screenshots, even when tests pass. See https://playwright.dev/docs/video-and-screenshots */
     video: {
       mode: "on",
-      size: { width: 1920, height: 1080 },
+      size: { width: 1280, height: 720 },
     },
 
     screenshot: {
