@@ -60,12 +60,29 @@ test(
     await page.getByRole("button", { name: "Save Changes" }).last().click();
 
     // ─── Test #9 — Edit File Metadata ───
-    await page.locator(".ui-chkbox-all").first().click();
-    await page.getByRole("button", { name: "Edit Files" }).click();
-    await page
-      .getByRole("link", { name: "Metadata" })
-      .last()
-      .click({ force: true });
+    // Wait for the file table to be visible first
+    await page.waitForSelector(".ui-chkbox-all", { state: "visible" });
+
+    // Click the select-all checkbox and wait for it to be checked
+    const selectAllCheckbox = page.locator(".ui-chkbox-all").first();
+    await selectAllCheckbox.click();
+
+    // Wait for the checkbox to actually be in checked state
+    await expect(selectAllCheckbox.locator(".ui-chkbox-box")).toHaveClass(
+      /ui-state-active/,
+    );
+
+    // Wait for Edit Files button to be enabled and visible
+    const editFilesButton = page.getByRole("button", { name: "Edit Files" });
+    await expect(editFilesButton).toBeVisible();
+    await expect(editFilesButton).toBeEnabled();
+
+    await editFilesButton.click();
+
+    // Wait for the metadata link to be available before clicking
+    const metadataLink = page.getByRole("link", { name: "Metadata" }).last();
+    await expect(metadataLink).toBeVisible();
+    await metadataLink.click({ force: true });
     await page
       .locator('[name="datasetForm:filesTable:0:fileDescription"]')
       .type("This is a modified description for the dataset file.");
