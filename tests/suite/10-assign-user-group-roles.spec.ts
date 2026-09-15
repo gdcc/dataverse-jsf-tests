@@ -15,7 +15,7 @@ test(
   async ({ page }) => {
     await page.goto(process.env.ROOT_DATAVERSE ?? "/");
     await page.getByText("Edit").click();
-    await page.getByText("Permissions").click();
+    await page.getByText("Permissions").first().click();
     await page.getByText("Users/Groups All the users").click();
     await page.getByText("Assign Roles to Users/Groups").click();
     await page
