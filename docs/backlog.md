@@ -1,7 +1,7 @@
 # Test Automation Backlog
 
 > Tracks test cases that are **out of scope for Playwright**, **not suitable for automation**, or **deferred** due to complexity or sprint constraints.  
-> Last updated: June 2026
+> Last updated: July 2026
 
 ---
 
@@ -51,6 +51,14 @@
 | # | Test Case | Badge | Reason / Notes | Priority |
 |---|-----------|-------|----------------|----------|
 | — | _No items yet_ | — | — | — |
+
+---
+
+## Regression Tests
+
+| # | Test Case | Badge | Reason / Notes | Priority |
+|---|-----------|-------|----------------|----------|
+| R-LF-01 | **Locally FAIR Regression — Dataset Download in a Locally FAIR Dataverse** — Creates a child dataverse with the Locally FAIR contact set (`dataverseForm:userGroupNameAssign:userGroupAutoComplete_input`), adds a dataset with two files, and verifies multi-file download | ⏳ **Deferred** | Locally FAIR is not enabled on the standard Docker deployment used by GitHub Actions CI. The feature depends on external components outside the scope of this repository. The test fails at Step 6 (autocomplete input not found) because the `userGroupNameAssign` panel is not rendered when the feature flag is off. Blocked until the owning team enables Locally FAIR on the target instance or provides a test-environment toggle. | High — blocked on external component |
 
 ---
 
