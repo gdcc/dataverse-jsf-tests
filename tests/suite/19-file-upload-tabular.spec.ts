@@ -95,7 +95,7 @@ test(
 
     for (const file of TABULAR_FILES) {
       await expect(
-        fileTable.getByRole("link", { name: file.name }),
+        fileTable.getByRole("link", { name: file.name, exact: true }),
       ).toBeVisible({ timeout: 10000 });
     }
   },

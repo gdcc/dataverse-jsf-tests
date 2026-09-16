@@ -106,9 +106,9 @@ test(
     await expect(fileTable).toBeVisible();
 
     for (const filename of EXPECTED_FILENAMES) {
-      await expect(fileTable.getByRole("link", { name: filename })).toBeVisible(
-        { timeout: 10000 },
-      );
+      await expect(
+        fileTable.getByRole("link", { name: filename, exact: true }),
+      ).toBeVisible({ timeout: 10000 });
     }
   },
 );
