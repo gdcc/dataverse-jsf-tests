@@ -54,34 +54,35 @@ test(
     await page
       .locator('[id$=":0:description"]')
       .first()
-      .fill("Standard suite test verifying all supported file formats can be uploaded.");
+      .fill(
+        "Standard suite test verifying all supported file formats can be uploaded.",
+      );
 
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
     await page
       .locator(".ui-selectcheckboxmenu-items-wrapper")
       .first()
       .getByText("Chemistry")
       .click();
     // Close subject dropdown
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
 
     // ── Step 4: Upload all formats in one batch ───────────────────────────────
     await page
       .locator('[id="datasetForm:fileUpload_input"]')
       .setInputFiles(TEST_FILES);
 
-    // Wait for every filename to appear in the upload staging area before
-    // saving — more reliable than a fixed timeout for 9 files with tabular
-    // ingestion (.dta, .RData, .sav, .xlsx, .csv).
-    for (const filename of EXPECTED_FILENAMES) {
-      await expect(page.getByText(filename, { exact: true })).toBeVisible({
-        timeout: 30000,
-      });
-    }
-
-    // Extra buffer after all files are visible — Dataverse continues
-    // background processing (checksum calculation, tabular ingestion) even
-    // after filenames appear. Clicking Save too early drops files.
+    // Wait for background processing (checksum calculation, tabular ingestion)
+    // before saving. A fixed buffer is used here because Dataverse splits
+    // ingested filenames into stem + extension in separate DOM elements,
+    // making exact-match assertions on the staging area unreliable across
+    // versions. The post-save file table (Step 7) is the authoritative check.
     await page.waitForTimeout(10000);
 
     // ── Step 5: Save Dataset ──────────────────────────────────────────────────
@@ -96,13 +97,17 @@ test(
     });
 
     // ── Step 7: Verify every uploaded filename appears in the file table ──────
+    // Match on the stem only (filename without extension): Dataverse renders
+    // ingested tabular files (e.g. .csv) as "<stem> | .<ext>" in separate
+    // DOM elements, so an exact full-filename match would fail for those.
     const fileTable = page.locator('[id="datasetForm:tabView:filesTable"]');
     await expect(fileTable).toBeVisible();
 
     for (const filename of EXPECTED_FILENAMES) {
-      await expect(
-        fileTable.getByText(filename, { exact: true }),
-      ).toBeVisible({ timeout: 10000 });
+      const stem = filename.replace(/\.[^.]+$/, "");
+      await expect(fileTable.getByText(stem, { exact: false })).toBeVisible({
+        timeout: 10000,
+      });
     }
   },
 );
