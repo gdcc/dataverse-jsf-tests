@@ -24,7 +24,9 @@ const TEST_FILES = [
 
 const EXPECTED_FILENAMES = [
   "sample-data.csv",
-  "demo-archive.zip",
+  // demo-archive.zip is auto-unpacked by Dataverse on upload — check extracted contents
+  "readme.txt",
+  "data.csv",
   "demo-document.pdf",
   "demo-code.R",
   "ro-crate-metadata.json",
