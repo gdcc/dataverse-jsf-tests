@@ -20,6 +20,14 @@ test(
   "Regression: Dataset Creation with Default Custom License",
   { tag: ["@regression"] },
   async ({ page }) => {
+    // Skip on deployments where custom dataset terms are not available.
+    // Set CUSTOM_LICENSE_ENABLED=true in .env to run this test.
+    const customLicenseEnabled =
+      (process.env.CUSTOM_LICENSE_ENABLED ?? "false") === "true";
+    test.skip(
+      !customLicenseEnabled,
+      "Custom dataset terms are not available on this deployment (set CUSTOM_LICENSE_ENABLED=true to run)",
+    );
     // ── Unique name ──────────────────────────────────────────────────────────
     const suffix = Date.now().toString(36);
     const templateName = `Playwright Regression Template ${suffix}`;
