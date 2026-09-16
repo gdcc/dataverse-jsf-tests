@@ -97,17 +97,16 @@ test(
     });
 
     // ── Step 7: Verify every uploaded filename appears in the file table ──────
-    // Match on the stem only (filename without extension): Dataverse renders
-    // ingested tabular files (e.g. .csv) as "<stem> | .<ext>" in separate
-    // DOM elements, so an exact full-filename match would fail for those.
+    // Use getByRole('link') scoped to the file table — the filename is the
+    // visible link text (e.g. "sample-data.csv"). This avoids strict-mode
+    // violations caused by sr-only preview spans also containing the stem.
     const fileTable = page.locator('[id="datasetForm:tabView:filesTable"]');
     await expect(fileTable).toBeVisible();
 
     for (const filename of EXPECTED_FILENAMES) {
-      const stem = filename.replace(/\.[^.]+$/, "");
-      await expect(fileTable.getByText(stem, { exact: false })).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(fileTable.getByRole("link", { name: filename })).toBeVisible(
+        { timeout: 10000 },
+      );
     }
   },
 );

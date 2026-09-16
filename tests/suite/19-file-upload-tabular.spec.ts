@@ -86,16 +86,17 @@ test(
     });
 
     // ── Step 7: Verify every filename appears in the file table ──────────────
-    // Match on stem only — tabular files are rendered as "<stem> | .<ext>"
-    // in separate DOM elements after ingest.
+    // Use getByRole('link') scoped to the file table — the filename is the
+    // visible link text (e.g. "demo-data.dta"). This avoids strict-mode
+    // violations when multiple files share the same stem (all four tabular
+    // files here are named "demo-data.*").
     const fileTable = page.locator('[id="datasetForm:tabView:filesTable"]');
     await expect(fileTable).toBeVisible();
 
     for (const file of TABULAR_FILES) {
-      const stem = file.name.replace(/\.[^.]+$/, "");
-      await expect(fileTable.getByText(stem, { exact: false })).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(
+        fileTable.getByRole("link", { name: file.name }),
+      ).toBeVisible({ timeout: 10000 });
     }
   },
 );
