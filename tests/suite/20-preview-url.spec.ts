@@ -99,12 +99,9 @@ test(
     ).toBeVisible();
     await previewContext.close();
 
-    // ── Step 6: Disable the Preview URL on the original authenticated page ────
-    // Re-open the Preview URL panel via Edit Dataset dropdown
-    await page.locator('[id="editDataSet"]').click();
-    await page.locator('[id="datasetForm:privateUrl"]').click();
-    await page.waitForTimeout(1500);
-
+    // ── Step 6: Disable the Preview URL ──────────────────────────────────────
+    // The Preview URL dialog is still open on `page` (we never navigated away),
+    // so go straight to the Disable button.
     await page
       .getByRole("button", { name: "Disable General Preview URL" })
       .click();
