@@ -18,8 +18,10 @@ test(
   async ({ page }) => {
     // Skip on deployments where Locally FAIR is not enabled.
     // Set LOCALLY_FAIR_ENABLED=true in .env to run this test.
+    const locallyFairEnabled =
+      (process.env.LOCALLY_FAIR_ENABLED ?? "false") === "true";
     test.skip(
-      process.env.LOCALLY_FAIR_ENABLED !== "true",
+      !locallyFairEnabled,
       "Locally FAIR is not enabled on this deployment (set LOCALLY_FAIR_ENABLED=true to run)",
     );
     // ── Unique dataverse identifier ──────────────────────────────────────────
