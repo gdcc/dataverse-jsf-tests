@@ -56,9 +56,7 @@ test(
 
     // Add second option — .nolabel-field-btn distinguishes the option-level
     // Add button from the question-level Add button (.compound-field-btn)
-    await page
-      .locator('.nolabel-field-btn[data-original-title="Add"]')
-      .click();
+    await page.locator('.nolabel-field-btn[data-original-title="Add"]').click();
     await page
       .locator('[id="guestbookForm:j_idt218:0:j_idt236:1:responseText"]')
       .waitFor();
@@ -73,24 +71,21 @@ test(
     await page.waitForLoadState("domcontentloaded");
 
     // ── Download all responses ────────────────────────────────────────────
+    const tbody = page.locator(
+      '[id="manageGuestbooksForm:allGuestbooks_data"]',
+    );
+    const guestbookRow = tbody.locator("tr").filter({
+      has: page.locator('td[role="gridcell"]', { hasText: guestbookName }),
+    });
     const downloadPromise = page.waitForEvent("download");
-    await page
-      .locator('[id="manageGuestbooksForm:downloadResponsesLink"]')
+    await guestbookRow
+      .locator('[id$="downloadResponsesByDvAndGuestbook"]')
       .click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).not.toBeNull();
 
     // ── Delete ────────────────────────────────────────────────────────────
-    const tbody = page.locator(
-      '[id="manageGuestbooksForm:allGuestbooks_data"]',
-    );
-    await tbody
-      .locator("tr")
-      .filter({
-        has: page.locator('td[role="gridcell"]', { hasText: guestbookName }),
-      })
-      .locator('[data-original-title="Delete"]')
-      .click();
+    await guestbookRow.locator('[data-original-title="Delete"]').click();
     await page.locator('[id="manageGuestbooksForm:j_idt251"]').click();
     await page.waitForLoadState("networkidle");
   },
