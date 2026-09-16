@@ -16,10 +16,16 @@ test(
   "Regression: Dataset Download in a Locally FAIR Dataverse",
   { tag: ["@regression"] },
   async ({ page }) => {
+    // Skip on deployments where Locally FAIR is not enabled.
+    // Set LOCALLY_FAIR_ENABLED=true in .env to run this test.
+    test.skip(
+      process.env.LOCALLY_FAIR_ENABLED !== "true",
+      "Locally FAIR is not enabled on this deployment (set LOCALLY_FAIR_ENABLED=true to run)",
+    );
     // ── Unique dataverse identifier ──────────────────────────────────────────
-    const suffix       = Date.now().toString(36);
-    const dvId         = `playwright-fair-${suffix}`;
-    const dvTitle      = `Playwright FAIR Dataverse ${suffix}`;
+    const suffix = Date.now().toString(36);
+    const dvId = `playwright-fair-${suffix}`;
+    const dvTitle = `Playwright FAIR Dataverse ${suffix}`;
     const contactEmail = process.env.DV_USERNAME as string;
 
     writeFairDataverseId(dvId);
@@ -72,19 +78,30 @@ test(
     await page.waitForLoadState("domcontentloaded");
 
     // ── Step 11: Fill required dataset metadata + upload TWO files ───────────
-    await page.locator('[id$=":0:inputText"]').first().fill(`${dvTitle} Dataset`);
+    await page
+      .locator('[id$=":0:inputText"]')
+      .first()
+      .fill(`${dvTitle} Dataset`);
     await page
       .locator('[id$=":0:description"]')
       .first()
-      .fill("Regression test dataset for Locally FAIR dataverse download verification.");
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+      .fill(
+        "Regression test dataset for Locally FAIR dataverse download verification.",
+      );
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
     await page
       .locator(".ui-selectcheckboxmenu-items-wrapper")
       .first()
       .getByText("Chemistry")
       .click();
     // Close the subject dropdown before uploading files
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
     await page
       .locator('[id="datasetForm:fileUpload_input"]')
       .setInputFiles([
@@ -98,7 +115,9 @@ test(
     await page.waitForLoadState("domcontentloaded");
 
     // ── Step 13: Verify creation banners ─────────────────────────────────────
-    await expect(page.getByText("This dataset has been created.")).toBeVisible();
+    await expect(
+      page.getByText("This dataset has been created."),
+    ).toBeVisible();
     await expect(
       page.getByText(
         "This draft version needs to be published. When ready for sharing, please publish it so that others can see these changes.",
@@ -135,4 +154,3 @@ test(
     expect(fileName.length).toBeGreaterThan(0);
   },
 );
-
