@@ -23,11 +23,27 @@ test(
     await page.getByRole("link", { name: "New Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.locator('[id$=":0:inputText"]').first().fill(`Preview URL Test Dataset ${suffix}`);
-    await page.locator('[id$=":0:description"]').first().fill("Dataset for Preview URL regression test.");
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
-    await page.locator(".ui-selectcheckboxmenu-items-wrapper").first().getByText("Chemistry").click();
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator('[id$=":0:inputText"]')
+      .first()
+      .fill(`Preview URL Test Dataset ${suffix}`);
+    await page
+      .locator('[id$=":0:description"]')
+      .first()
+      .fill("Dataset for Preview URL regression test.");
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-items-wrapper")
+      .first()
+      .getByText("Chemistry")
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
 
     await page
       .locator('[id="datasetForm:fileUpload_input"]')
@@ -39,7 +55,9 @@ test(
 
     await page.getByRole("button", { name: "Save Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
-    await expect(page.getByText("This dataset has been created.")).toBeVisible();
+    await expect(
+      page.getByText("This dataset has been created."),
+    ).toBeVisible();
 
     // ── Step 2: Edit Dataset → Preview URL ───────────────────────────────────
     await page.locator('[id="editDataSet"]').click();
@@ -48,7 +66,9 @@ test(
     // ── Step 3: Create General Preview URL ───────────────────────────────────
     // The Preview URL panel is a PrimeFaces dialog — wait for the button to
     // appear rather than a full page load
-    await page.getByRole("button", { name: "Create General Preview URL" }).click();
+    await page
+      .getByRole("button", { name: "Create General Preview URL" })
+      .click();
     await page.waitForTimeout(2000);
 
     // ── Step 4: Read the preview URL from the highlighted text span ──────────
@@ -59,32 +79,49 @@ test(
     expect(previewUrl).toContain("previewurl.xhtml");
     expect(previewUrl).toContain("token=");
 
-    // ── Step 5: Navigate to the preview URL and verify the banner ────────────
-    await page.goto(previewUrl);
-    await page.waitForLoadState("domcontentloaded");
-    await expect(page.locator("#messagePanel").getByText("Unpublished Dataset Preview URL")).toBeVisible();
-    await expect(page.getByText("Privately share this draft dataset before it is published")).toBeVisible();
+    // ── Step 5: Verify preview URL in a fresh unauthenticated context ─────────
+    // Visiting the URL as the authenticated owner triggers a Dataverse redirect
+    // to the edit page. Use an isolated context (no cookies) to simulate an
+    // external user, which is the intended audience for a preview URL.
+    const previewContext = await page.context().browser()!.newContext();
+    const previewPage = await previewContext.newPage();
+    await previewPage.goto(previewUrl);
+    await previewPage.waitForLoadState("domcontentloaded");
+    await expect(
+      previewPage
+        .locator("#messagePanel")
+        .getByText("Unpublished Dataset Preview URL"),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      previewPage.getByText(
+        "Privately share this draft dataset before it is published",
+      ),
+    ).toBeVisible();
+    await previewContext.close();
 
-    // ── Step 6: Navigate back to the dataset page, then disable the Preview URL
-    await page.goBack();
-    await page.waitForLoadState("domcontentloaded");
-
+    // ── Step 6: Disable the Preview URL on the original authenticated page ────
     // Re-open the Preview URL panel via Edit Dataset dropdown
     await page.locator('[id="editDataSet"]').click();
     await page.locator('[id="datasetForm:privateUrl"]').click();
     await page.waitForTimeout(1500);
 
-    await page.getByRole("button", { name: "Disable General Preview URL" }).click();
+    await page
+      .getByRole("button", { name: "Disable General Preview URL" })
+      .click();
     await page.waitForTimeout(1500);
 
     // Confirmation popup — must explicitly confirm the disable
-    await page.getByRole("button", { name: "Yes, Disable General Preview URL" }).click();
+    await page
+      .getByRole("button", { name: "Yes, Disable General Preview URL" })
+      .click();
     await page.waitForTimeout(2000);
 
     // Verify the success message — panel closes after disable so this is
     // the definitive confirmation the URL was disabled
     await expect(
-      page.getByText("You have successfully disabled the Preview URL for this unpublished dataset."),
+      page.getByText(
+        "You have successfully disabled the Preview URL for this unpublished dataset.",
+      ),
     ).toBeVisible({ timeout: 10000 });
   },
 );
