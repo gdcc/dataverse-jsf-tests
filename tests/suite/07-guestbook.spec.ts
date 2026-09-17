@@ -80,11 +80,11 @@ test(
     const guestbookRow = tbody.locator("tr").filter({
       has: page.locator('td[role="gridcell"]', { hasText: guestbookName }),
     });
-    const downloadResponsePromise = page.waitForResponse(
-      async (resp) =>
+    const downloadResponsePromise = page.context().waitForEvent("response", {
+      predicate: (resp) =>
         resp.status() === 200 && !!resp.headers()["content-disposition"],
-      { timeout: 30000 },
-    );
+      timeout: 30000,
+    });
     await guestbookRow
       .locator('[id$="downloadResponsesByDvAndGuestbook"]')
       .click();

@@ -24,14 +24,14 @@ test(
 
     await page.locator(".ui-chkbox-all").first().click();
 
-    // Use waitForResponse instead of waitForEvent("download") — WebKit opens
-    // files inline rather than triggering a download event. Intercepting at
-    // the network layer works identically on all three browsers.
-    const downloadResponsePromise = page.waitForResponse(
-      async (resp) =>
+    // Use context().waitForEvent("response") instead of page.waitForResponse() —
+    // WebKit may open files in a new page, making the response invisible to the
+    // originating page's listener. Context-level listener catches it either way.
+    const downloadResponsePromise = page.context().waitForEvent("response", {
+      predicate: (resp) =>
         resp.status() === 200 && !!resp.headers()["content-disposition"],
-      { timeout: 30000 },
-    );
+      timeout: 30000,
+    });
     await page.getByRole("link", { name: "Download" }).click();
     const downloadResponse = await downloadResponsePromise;
     const fileName = downloadResponse.headers()["content-disposition"] ?? "";

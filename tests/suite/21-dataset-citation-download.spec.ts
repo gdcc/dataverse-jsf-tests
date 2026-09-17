@@ -59,17 +59,24 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 4: Download EndNote XML ─────────────────────────────────────────
-    // Use waitForResponse instead of waitForEvent("download") — WebKit opens
-    // files inline rather than triggering a download event. Intercepting at
-    // the network layer works identically on all three browsers.
-    const endnoteResponsePromise = page.waitForResponse(
-      (resp) => resp.url().includes("endnote") && resp.status() === 200,
-      { timeout: 30000 },
-    );
+    // Use context().waitForEvent("response") rather than page.waitForResponse()
+    // because WebKit may open the file in a new page — responses from new pages
+    // are invisible to the originating page's waitForResponse listener.
+    // Listening at the context level catches responses from any page.
+    const endnoteResponsePromise = page.context().waitForEvent("response", {
+      predicate: (resp) =>
+        resp.status() === 200 &&
+        (resp.headers()["content-disposition"] ?? "")
+          .toLowerCase()
+          .includes("endnote"),
+      timeout: 30000,
+    });
     await page.locator('[id="datasetForm:endNoteLink"]').click();
     const endnoteResponse = await endnoteResponsePromise;
     const endnoteContent = await endnoteResponse.text();
-    console.log(`EndNote download: ${endnoteResponse.url()}`);
+    console.log(
+      `EndNote download: ${endnoteResponse.headers()["content-disposition"]}`,
+    );
     // EndNote XML must contain the XML wrapper and a dataset record
     expect(endnoteContent).toContain("<?xml");
     expect(endnoteContent).toContain("<records>");
@@ -80,14 +87,20 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 6: Download RIS ──────────────────────────────────────────────────
-    const risResponsePromise = page.waitForResponse(
-      (resp) => resp.url().includes("ris") && resp.status() === 200,
-      { timeout: 30000 },
-    );
+    const risResponsePromise = page.context().waitForEvent("response", {
+      predicate: (resp) =>
+        resp.status() === 200 &&
+        (resp.headers()["content-disposition"] ?? "")
+          .toLowerCase()
+          .includes(".ris"),
+      timeout: 30000,
+    });
     await page.locator('[id="datasetForm:risLink"]').click();
     const risResponse = await risResponsePromise;
     const risContent = await risResponse.text();
-    console.log(`RIS download: ${risResponse.url()}`);
+    console.log(
+      `RIS download: ${risResponse.headers()["content-disposition"]}`,
+    );
     // RIS format must contain the type tag and end-of-record marker
     expect(risContent).toContain("TY  - DATA");
     expect(risContent).toContain("DO  - doi:");
