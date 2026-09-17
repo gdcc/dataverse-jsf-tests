@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import fs from "fs";
 const process = (globalThis as any).process;
 
 /**
@@ -24,33 +25,15 @@ test(
     await page.getByRole("link", { name: "New Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page
-      .locator('[id$=":0:inputText"]')
-      .first()
-      .fill(`Citation Download Test ${suffix}`);
-    await page
-      .locator('[id$=":0:description"]')
-      .first()
-      .fill("Dataset for citation download test.");
-    await page
-      .locator(".ui-selectcheckboxmenu-multiple-container")
-      .first()
-      .click();
-    await page
-      .locator(".ui-selectcheckboxmenu-items-wrapper")
-      .first()
-      .getByText("Chemistry")
-      .click();
-    await page
-      .locator(".ui-selectcheckboxmenu-multiple-container")
-      .first()
-      .click();
+    await page.locator('[id$=":0:inputText"]').first().fill(`Citation Download Test ${suffix}`);
+    await page.locator('[id$=":0:description"]').first().fill("Dataset for citation download test.");
+    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page.locator(".ui-selectcheckboxmenu-items-wrapper").first().getByText("Chemistry").click();
+    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
 
     await page.getByRole("button", { name: "Save Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
-    await expect(
-      page.getByText("This dataset has been created."),
-    ).toBeVisible();
+    await expect(page.getByText("This dataset has been created.")).toBeVisible();
 
     // ── Step 2: Verify DOI is present in the citation block ───────────────────
     await expect(page.getByText("https://doi.org/")).toBeVisible();
@@ -59,42 +42,32 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 4: Download EndNote XML ─────────────────────────────────────────
-    // Use page.evaluate(fetch) to request the file directly from within the
-    // browser — this inherits auth cookies and bypasses all browser differences
-    // in how files are handled (download, open inline, navigate). Works on all
-    // three browsers without relying on download events or response listeners.
-    const endnoteHref = await page
-      .locator('[id="datasetForm:endNoteLink"]')
-      .getAttribute("href");
-    const endnoteResult = await page.evaluate(async (url) => {
-      const resp = await fetch(url);
-      return { status: resp.status, body: await resp.text() };
-    }, endnoteHref!);
-    console.log(`EndNote download: status=${endnoteResult.status}`);
-    expect(endnoteResult.status).toBe(200);
+    const endnoteDownload = page.waitForEvent("download");
+    await page.locator('[id="datasetForm:endNoteLink"]').click();
+    const endnote = await endnoteDownload;
+    const endnotePath = await endnote.path();
+    const endnoteContent = fs.readFileSync(endnotePath!, "utf-8");
+    console.log(`EndNote download: ${endnote.suggestedFilename()}`);
     // EndNote XML must contain the XML wrapper and a dataset record
-    expect(endnoteResult.body).toContain("<?xml");
-    expect(endnoteResult.body).toContain("<records>");
-    expect(endnoteResult.body).toContain("<record>");
-    expect(endnoteResult.body).toContain("doi");
+    expect(endnoteContent).toContain("<?xml");
+    expect(endnoteContent).toContain("<records>");
+    expect(endnoteContent).toContain("<record>");
+    expect(endnoteContent).toContain("doi");
 
     // ── Step 5: Re-open Cite Dataset dropdown for next format ─────────────────
     await page.locator("button.downloadCitation").click();
 
     // ── Step 6: Download RIS ──────────────────────────────────────────────────
-    const risHref = await page
-      .locator('[id="datasetForm:risLink"]')
-      .getAttribute("href");
-    const risResult = await page.evaluate(async (url) => {
-      const resp = await fetch(url);
-      return { status: resp.status, body: await resp.text() };
-    }, risHref!);
-    console.log(`RIS download: status=${risResult.status}`);
-    expect(risResult.status).toBe(200);
+    const risDownload = page.waitForEvent("download");
+    await page.locator('[id="datasetForm:risLink"]').click();
+    const ris = await risDownload;
+    const risPath = await ris.path();
+    const risContent = fs.readFileSync(risPath!, "utf-8");
+    console.log(`RIS download: ${ris.suggestedFilename()}`);
     // RIS format must contain the type tag and end-of-record marker
-    expect(risResult.body).toContain("TY  - DATA");
-    expect(risResult.body).toContain("DO  - doi:");
-    expect(risResult.body).toContain("ER  -");
+    expect(risContent).toContain("TY  - DATA");
+    expect(risContent).toContain("DO  - doi:");
+    expect(risContent).toContain("ER  -");
 
     // ── Step 7: Re-open Cite Dataset dropdown for BibTeX ─────────────────────
     await page.locator("button.downloadCitation").click();

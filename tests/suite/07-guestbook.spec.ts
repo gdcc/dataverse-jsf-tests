@@ -71,27 +71,18 @@ test(
     await page.waitForLoadState("domcontentloaded");
 
     // ── Download all responses ────────────────────────────────────────────
-    // Use page.evaluate(fetch) to request the CSV directly from within the
-    // browser — inherits auth cookies and bypasses browser-specific handling
-    // (download vs. open inline vs. navigate). Works on all three browsers.
     const tbody = page.locator(
       '[id="manageGuestbooksForm:allGuestbooks_data"]',
     );
     const guestbookRow = tbody.locator("tr").filter({
       has: page.locator('td[role="gridcell"]', { hasText: guestbookName }),
     });
-    const downloadHref = await guestbookRow
+    const downloadPromise = page.waitForEvent("download");
+    await guestbookRow
       .locator('[id$="downloadResponsesByDvAndGuestbook"]')
-      .getAttribute("href");
-    const downloadResult = await page.evaluate(async (url) => {
-      const resp = await fetch(url);
-      return {
-        status: resp.status,
-        disposition: resp.headers.get("content-disposition") ?? "",
-      };
-    }, downloadHref!);
-    console.log(`Guestbook CSV: ${downloadResult.disposition}`);
-    expect(downloadResult.status).toBe(200);
+      .click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).not.toBeNull();
 
     // ── Delete ────────────────────────────────────────────────────────────
     await guestbookRow.locator('[data-original-title="Delete"]').click();

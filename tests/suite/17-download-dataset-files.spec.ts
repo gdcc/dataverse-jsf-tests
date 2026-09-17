@@ -24,21 +24,12 @@ test(
 
     await page.locator(".ui-chkbox-all").first().click();
 
-    // Use page.evaluate(fetch) to request the download directly from within the
-    // browser — inherits auth cookies and bypasses browser-specific handling
-    // (download vs. open inline vs. navigate). Works on all three browsers.
-    const downloadHref = await page
-      .getByRole("link", { name: "Download" })
-      .getAttribute("href");
-    const downloadResult = await page.evaluate(async (url) => {
-      const resp = await fetch(url);
-      return {
-        status: resp.status,
-        disposition: resp.headers.get("content-disposition") ?? "",
-      };
-    }, downloadHref!);
-    console.log(`Downloaded file: ${downloadResult.disposition}`);
-    expect(downloadResult.status).toBe(200);
-    expect(downloadResult.disposition).not.toBe("");
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download" }).click();
+    const download = await downloadPromise;
+
+    const fileName = download.suggestedFilename();
+    console.log(`Downloaded file: ${fileName}`);
+    expect(fileName).not.toBeNull();
   },
 );
