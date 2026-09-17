@@ -64,6 +64,10 @@ test(
 
     // ── Step 3: Open Cite Dataset dropdown ───────────────────────────────────
     await page.locator("button.downloadCitation").click();
+    // Wait for the dropdown to be fully rendered before interacting
+    await page
+      .locator('[id="datasetForm:endNoteLink"]')
+      .waitFor({ state: "visible" });
 
     // ── Step 4: Download EndNote XML ─────────────────────────────────────────
     const endnoteDownload = page.waitForEvent("download");
@@ -80,6 +84,9 @@ test(
 
     // ── Step 5: Re-open Cite Dataset dropdown for next format ─────────────────
     await page.locator("button.downloadCitation").click();
+    await page
+      .locator('[id="datasetForm:risLink"]')
+      .waitFor({ state: "visible" });
 
     // ── Step 6: Download RIS ──────────────────────────────────────────────────
     const risDownload = page.waitForEvent("download");
@@ -95,6 +102,9 @@ test(
 
     // ── Step 7: Re-open Cite Dataset dropdown for BibTeX ─────────────────────
     await page.locator("button.downloadCitation").click();
+    await page
+      .locator('[id="datasetForm:bibLink"]')
+      .waitFor({ state: "visible" });
 
     // ── Step 8: BibTeX opens in a new tab ─────────────────────────────────────
     // BibTeX uses target="_blank" — intercept the new page rather than a download
