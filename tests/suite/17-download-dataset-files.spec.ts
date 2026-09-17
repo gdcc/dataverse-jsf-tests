@@ -24,12 +24,18 @@ test(
 
     await page.locator(".ui-chkbox-all").first().click();
 
-    const downloadPromise = page.waitForEvent("download");
+    // Use waitForResponse instead of waitForEvent("download") — WebKit opens
+    // files inline rather than triggering a download event. Intercepting at
+    // the network layer works identically on all three browsers.
+    const downloadResponsePromise = page.waitForResponse(
+      async (resp) =>
+        resp.status() === 200 && !!resp.headers()["content-disposition"],
+      { timeout: 30000 },
+    );
     await page.getByRole("link", { name: "Download" }).click();
-    const download = await downloadPromise;
-
-    const fileName = download.suggestedFilename();
+    const downloadResponse = await downloadResponsePromise;
+    const fileName = downloadResponse.headers()["content-disposition"] ?? "";
     console.log(`Downloaded file: ${fileName}`);
-    expect(fileName).not.toBeNull();
+    expect(downloadResponse.status()).toBe(200);
   },
 );

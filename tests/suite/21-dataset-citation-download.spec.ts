@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import fs from "fs";
 const process = (globalThis as any).process;
 
 /**
@@ -25,15 +24,33 @@ test(
     await page.getByRole("link", { name: "New Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.locator('[id$=":0:inputText"]').first().fill(`Citation Download Test ${suffix}`);
-    await page.locator('[id$=":0:description"]').first().fill("Dataset for citation download test.");
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
-    await page.locator(".ui-selectcheckboxmenu-items-wrapper").first().getByText("Chemistry").click();
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator('[id$=":0:inputText"]')
+      .first()
+      .fill(`Citation Download Test ${suffix}`);
+    await page
+      .locator('[id$=":0:description"]')
+      .first()
+      .fill("Dataset for citation download test.");
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-items-wrapper")
+      .first()
+      .getByText("Chemistry")
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
 
     await page.getByRole("button", { name: "Save Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
-    await expect(page.getByText("This dataset has been created.")).toBeVisible();
+    await expect(
+      page.getByText("This dataset has been created."),
+    ).toBeVisible();
 
     // ── Step 2: Verify DOI is present in the citation block ───────────────────
     await expect(page.getByText("https://doi.org/")).toBeVisible();
@@ -42,12 +59,17 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 4: Download EndNote XML ─────────────────────────────────────────
-    const endnoteDownload = page.waitForEvent("download");
+    // Use waitForResponse instead of waitForEvent("download") — WebKit opens
+    // files inline rather than triggering a download event. Intercepting at
+    // the network layer works identically on all three browsers.
+    const endnoteResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes("endnote") && resp.status() === 200,
+      { timeout: 30000 },
+    );
     await page.locator('[id="datasetForm:endNoteLink"]').click();
-    const endnote = await endnoteDownload;
-    const endnotePath = await endnote.path();
-    const endnoteContent = fs.readFileSync(endnotePath!, "utf-8");
-    console.log(`EndNote download: ${endnote.suggestedFilename()}`);
+    const endnoteResponse = await endnoteResponsePromise;
+    const endnoteContent = await endnoteResponse.text();
+    console.log(`EndNote download: ${endnoteResponse.url()}`);
     // EndNote XML must contain the XML wrapper and a dataset record
     expect(endnoteContent).toContain("<?xml");
     expect(endnoteContent).toContain("<records>");
@@ -58,12 +80,14 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 6: Download RIS ──────────────────────────────────────────────────
-    const risDownload = page.waitForEvent("download");
+    const risResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes("ris") && resp.status() === 200,
+      { timeout: 30000 },
+    );
     await page.locator('[id="datasetForm:risLink"]').click();
-    const ris = await risDownload;
-    const risPath = await ris.path();
-    const risContent = fs.readFileSync(risPath!, "utf-8");
-    console.log(`RIS download: ${ris.suggestedFilename()}`);
+    const risResponse = await risResponsePromise;
+    const risContent = await risResponse.text();
+    console.log(`RIS download: ${risResponse.url()}`);
     // RIS format must contain the type tag and end-of-record marker
     expect(risContent).toContain("TY  - DATA");
     expect(risContent).toContain("DO  - doi:");
