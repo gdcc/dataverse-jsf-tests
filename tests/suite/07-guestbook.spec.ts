@@ -13,7 +13,13 @@ const process = (globalThis as any).process;
 test(
   "Section: Dataset Guestbooks – create, download responses, delete",
   { tag: ["@standard"] },
-  async ({ page }) => {
+  async ({ page, browserName }) => {
+    // WebKit opens CSV files inline instead of triggering a download event.
+    // Skip until a cross-browser download verification strategy is in place.
+    test.skip(
+      browserName === "webkit",
+      "Download event not fired on WebKit for CSV responses",
+    );
     const suffix = Date.now().toString(36);
     const guestbookName = `Playwright Test Guestbook ${suffix}`;
 

@@ -14,7 +14,13 @@ const process = (globalThis as any).process;
 test(
   "Standard: Dataset Citation Download (DOI + EndNote + RIS + BibTeX)",
   { tag: ["@standard"] },
-  async ({ page }) => {
+  async ({ page, browserName }) => {
+    // WebKit opens XML/RIS files inline instead of triggering a download event.
+    // Skip until a cross-browser download verification strategy is in place.
+    test.skip(
+      browserName === "webkit",
+      "Download event not fired on WebKit for XML/RIS responses",
+    );
     const suffix = Date.now().toString(36);
 
     // ── Step 1: Create a fresh unpublished dataset ────────────────────────────
@@ -25,15 +31,33 @@ test(
     await page.getByRole("link", { name: "New Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.locator('[id$=":0:inputText"]').first().fill(`Citation Download Test ${suffix}`);
-    await page.locator('[id$=":0:description"]').first().fill("Dataset for citation download test.");
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
-    await page.locator(".ui-selectcheckboxmenu-items-wrapper").first().getByText("Chemistry").click();
-    await page.locator(".ui-selectcheckboxmenu-multiple-container").first().click();
+    await page
+      .locator('[id$=":0:inputText"]')
+      .first()
+      .fill(`Citation Download Test ${suffix}`);
+    await page
+      .locator('[id$=":0:description"]')
+      .first()
+      .fill("Dataset for citation download test.");
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-items-wrapper")
+      .first()
+      .getByText("Chemistry")
+      .click();
+    await page
+      .locator(".ui-selectcheckboxmenu-multiple-container")
+      .first()
+      .click();
 
     await page.getByRole("button", { name: "Save Dataset" }).click();
     await page.waitForLoadState("domcontentloaded");
-    await expect(page.getByText("This dataset has been created.")).toBeVisible();
+    await expect(
+      page.getByText("This dataset has been created."),
+    ).toBeVisible();
 
     // ── Step 2: Verify DOI is present in the citation block ───────────────────
     await expect(page.getByText("https://doi.org/")).toBeVisible();
