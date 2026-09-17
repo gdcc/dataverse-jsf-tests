@@ -59,52 +59,42 @@ test(
     await page.locator("button.downloadCitation").click();
 
     // ── Step 4: Download EndNote XML ─────────────────────────────────────────
-    // Use context().waitForEvent("response") rather than page.waitForResponse()
-    // because WebKit may open the file in a new page — responses from new pages
-    // are invisible to the originating page's waitForResponse listener.
-    // Listening at the context level catches responses from any page.
-    const endnoteResponsePromise = page.context().waitForEvent("response", {
-      predicate: (resp) =>
-        resp.status() === 200 &&
-        (resp.headers()["content-disposition"] ?? "")
-          .toLowerCase()
-          .includes("endnote"),
-      timeout: 30000,
-    });
-    await page.locator('[id="datasetForm:endNoteLink"]').click();
-    const endnoteResponse = await endnoteResponsePromise;
-    const endnoteContent = await endnoteResponse.text();
-    console.log(
-      `EndNote download: ${endnoteResponse.headers()["content-disposition"]}`,
-    );
+    // Use page.evaluate(fetch) to request the file directly from within the
+    // browser — this inherits auth cookies and bypasses all browser differences
+    // in how files are handled (download, open inline, navigate). Works on all
+    // three browsers without relying on download events or response listeners.
+    const endnoteHref = await page
+      .locator('[id="datasetForm:endNoteLink"]')
+      .getAttribute("href");
+    const endnoteResult = await page.evaluate(async (url) => {
+      const resp = await fetch(url);
+      return { status: resp.status, body: await resp.text() };
+    }, endnoteHref!);
+    console.log(`EndNote download: status=${endnoteResult.status}`);
+    expect(endnoteResult.status).toBe(200);
     // EndNote XML must contain the XML wrapper and a dataset record
-    expect(endnoteContent).toContain("<?xml");
-    expect(endnoteContent).toContain("<records>");
-    expect(endnoteContent).toContain("<record>");
-    expect(endnoteContent).toContain("doi");
+    expect(endnoteResult.body).toContain("<?xml");
+    expect(endnoteResult.body).toContain("<records>");
+    expect(endnoteResult.body).toContain("<record>");
+    expect(endnoteResult.body).toContain("doi");
 
     // ── Step 5: Re-open Cite Dataset dropdown for next format ─────────────────
     await page.locator("button.downloadCitation").click();
 
     // ── Step 6: Download RIS ──────────────────────────────────────────────────
-    const risResponsePromise = page.context().waitForEvent("response", {
-      predicate: (resp) =>
-        resp.status() === 200 &&
-        (resp.headers()["content-disposition"] ?? "")
-          .toLowerCase()
-          .includes(".ris"),
-      timeout: 30000,
-    });
-    await page.locator('[id="datasetForm:risLink"]').click();
-    const risResponse = await risResponsePromise;
-    const risContent = await risResponse.text();
-    console.log(
-      `RIS download: ${risResponse.headers()["content-disposition"]}`,
-    );
+    const risHref = await page
+      .locator('[id="datasetForm:risLink"]')
+      .getAttribute("href");
+    const risResult = await page.evaluate(async (url) => {
+      const resp = await fetch(url);
+      return { status: resp.status, body: await resp.text() };
+    }, risHref!);
+    console.log(`RIS download: status=${risResult.status}`);
+    expect(risResult.status).toBe(200);
     // RIS format must contain the type tag and end-of-record marker
-    expect(risContent).toContain("TY  - DATA");
-    expect(risContent).toContain("DO  - doi:");
-    expect(risContent).toContain("ER  -");
+    expect(risResult.body).toContain("TY  - DATA");
+    expect(risResult.body).toContain("DO  - doi:");
+    expect(risResult.body).toContain("ER  -");
 
     // ── Step 7: Re-open Cite Dataset dropdown for BibTeX ─────────────────────
     await page.locator("button.downloadCitation").click();

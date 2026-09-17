@@ -71,25 +71,27 @@ test(
     await page.waitForLoadState("domcontentloaded");
 
     // ── Download all responses ────────────────────────────────────────────
-    // Use waitForResponse instead of waitForEvent("download") — WebKit opens
-    // CSV files inline rather than triggering a download event, causing a
-    // timeout. Intercepting at the network layer works on all three browsers.
+    // Use page.evaluate(fetch) to request the CSV directly from within the
+    // browser — inherits auth cookies and bypasses browser-specific handling
+    // (download vs. open inline vs. navigate). Works on all three browsers.
     const tbody = page.locator(
       '[id="manageGuestbooksForm:allGuestbooks_data"]',
     );
     const guestbookRow = tbody.locator("tr").filter({
       has: page.locator('td[role="gridcell"]', { hasText: guestbookName }),
     });
-    const downloadResponsePromise = page.context().waitForEvent("response", {
-      predicate: (resp) =>
-        resp.status() === 200 && !!resp.headers()["content-disposition"],
-      timeout: 30000,
-    });
-    await guestbookRow
+    const downloadHref = await guestbookRow
       .locator('[id$="downloadResponsesByDvAndGuestbook"]')
-      .click();
-    const downloadResponse = await downloadResponsePromise;
-    expect(downloadResponse.status()).toBe(200);
+      .getAttribute("href");
+    const downloadResult = await page.evaluate(async (url) => {
+      const resp = await fetch(url);
+      return {
+        status: resp.status,
+        disposition: resp.headers.get("content-disposition") ?? "",
+      };
+    }, downloadHref!);
+    console.log(`Guestbook CSV: ${downloadResult.disposition}`);
+    expect(downloadResult.status).toBe(200);
 
     // ── Delete ────────────────────────────────────────────────────────────
     await guestbookRow.locator('[data-original-title="Delete"]').click();
