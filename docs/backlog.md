@@ -1,7 +1,7 @@
 # Test Automation Backlog
 
 > Tracks test cases that are **out of scope for Playwright**, **not suitable for automation**, or **deferred** due to complexity or sprint constraints.  
-> Last updated: June 2026
+> Last updated: July 2026
 
 ---
 
@@ -54,11 +54,20 @@
 
 ---
 
+## Regression Tests
+
+| # | Test Case | Badge | Reason / Notes | Priority |
+|---|-----------|-------|----------------|----------|
+| R-LF-01 | **Locally FAIR Regression — Dataset Download in a Locally FAIR Dataverse** — Creates a child dataverse with the Locally FAIR contact set (`dataverseForm:userGroupNameAssign:userGroupAutoComplete_input`), adds a dataset with two files, and verifies multi-file download | ⏳ **Deferred** | Locally FAIR is not enabled on the standard Docker deployment used by GitHub Actions CI. The feature depends on external components outside the scope of this repository. The test fails at Step 6 (autocomplete input not found) because the `userGroupNameAssign` panel is not rendered when the feature flag is off. Blocked until the owning team enables Locally FAIR on the target instance or provides a test-environment toggle. | High — blocked on external component |
+
+---
+
 ## Cross-Suite / General
 
 | # | Test Case | Badge | Reason / Notes | Priority |
 |---|-----------|-------|----------------|----------|
-| — | _No items yet_ | — | — | — |
+| X-GB-01 | **Guestbook CSV column verification** — After downloading the all-responses CSV in test 07, parse the file and assert the expected column headers are present (Name, Email, Institution, Position, custom question text, etc.) | ⏳ **Deferred** | Download is verified non-null today; column-level assertions require reading and parsing the downloaded file. Deferred to a follow-up sprint. | Medium |
+| X-DE-01 | **Data Exploration — Data Explorer + File Previewer** — Upload a CSV to trigger tabular ingest, click the Explore button to verify Data Explorer loads; click a text file to verify File Previewer loads. | 🚫 **Not Automatable** (this config) | Data Explorer and File Previewer are ASF optional features not enabled by default on the target instance. Automation requires a cloak function that lives in a separate repository with a different suite config. Revisit once that cloak function is available and the feature is confirmed enabled on the target. | High — revisit when cloak function is integrated |
 
 ---
 

@@ -1,6 +1,11 @@
 # Section-2 runtime state (dataverse identifier written by 03-create-dataverse)
 .s2-dataverse-id
 
+# Regression suite runtime state
+.regression-template-name
+.regression-custom-terms
+.regression-fair-dataverse-id
+
 # Logs
 logs
 *.log

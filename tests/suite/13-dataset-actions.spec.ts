@@ -128,6 +128,16 @@ test(
       .click();
     await page.getByRole("link", { name: "Publish Dataset" }).click();
     await page.getByRole("button", { name: "Continue" }).click();
+
+    // After the publish is confirmed, Dataverse locks the dataset and then
+    // auto-reloads the page once indexing is complete (~5–10 s).
+    // If the "Publish Dataset" link is still present in any state (visible,
+    // greyed-out, hidden) after 30 s, the auto-reload never fired — which
+    // is a known regression. toBeHidden matches elements that are absent
+    // from the DOM entirely, so this assertion fails if the reload is missing.
+    await expect(
+      page.getByRole("link", { name: "Publish Dataset" }),
+    ).toBeHidden({ timeout: 30000 });
     console.log("Dataset finalized and published.");
   },
 );

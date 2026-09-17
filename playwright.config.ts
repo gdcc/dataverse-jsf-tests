@@ -32,7 +32,7 @@ require("dotenv").config({ path: path.resolve(__dirname, ".env") });
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: "./tests/suite",
+  testDir: "./tests",
   timeout: 180000,
   /* All tests within a project run in strict sequence; projects themselves
      run one at a time because workers is 1. */
@@ -48,23 +48,22 @@ export default defineConfig({
     headless: true,
 
     launchOptions: {
-      slowMo: 3000,
+      slowMo: 1500,
     },
 
     // Sets the default viewport size for all tests
     viewport: { width: 1280, height: 720 },
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on",
+    /* Collect trace, video and screenshots only on failure to reduce artifact size. */
+    trace: "retain-on-failure",
 
-    /* Always collect video and screenshots, even when tests pass. See https://playwright.dev/docs/video-and-screenshots */
     video: {
-      mode: "on",
+      mode: "retain-on-failure",
       size: { width: 1280, height: 720 },
     },
 
     screenshot: {
-      mode: "on",
+      mode: "only-on-failure",
       fullPage: true,
     },
   },
@@ -204,6 +203,108 @@ export default defineConfig({
         }),
       },
       dependencies: ["setup-webkit", "suite-firefox"],
+    },
+
+    /* =========================================================
+       4a. Regression setup — Chromium
+       ========================================================= */
+    {
+      name: "regression-setup-chromium",
+      testMatch: /suite\/auth\.setup\.ts/,
+      tsconfig: "./tests/suite/tsconfig.json",
+      use: {
+        browserName: "chromium",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_CHROMIUM) && {
+          storageState: AUTH_CHROMIUM,
+        }),
+      },
+      dependencies: [],
+    },
+
+    /* =========================================================
+       4b. Regression setup — Firefox
+       ========================================================= */
+    {
+      name: "regression-setup-firefox",
+      testMatch: /suite\/auth\.setup\.ts/,
+      tsconfig: "./tests/suite/tsconfig.json",
+      use: {
+        browserName: "firefox",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_FIREFOX) && {
+          storageState: AUTH_FIREFOX,
+        }),
+      },
+      dependencies: [],
+    },
+
+    /* =========================================================
+       4c. Regression setup — WebKit
+       ========================================================= */
+    {
+      name: "regression-setup-webkit",
+      testMatch: /suite\/auth\.setup\.ts/,
+      tsconfig: "./tests/suite/tsconfig.json",
+      use: {
+        browserName: "webkit",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_WEBKIT) && {
+          storageState: AUTH_WEBKIT,
+        }),
+      },
+      dependencies: [],
+    },
+
+    /* =========================================================
+       4d. Regression suite — Chromium
+       ========================================================= */
+    {
+      name: "regression-chromium",
+      testMatch: /regression\/.*\.spec\.ts/,
+      tsconfig: "./tests/regression/tsconfig.json",
+      use: {
+        browserName: "chromium",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_CHROMIUM) && {
+          storageState: AUTH_CHROMIUM,
+        }),
+      },
+      dependencies: ["regression-setup-chromium"],
+    },
+
+    /* =========================================================
+       4e. Regression suite — Firefox
+       ========================================================= */
+    {
+      name: "regression-firefox",
+      testMatch: /regression\/.*\.spec\.ts/,
+      tsconfig: "./tests/regression/tsconfig.json",
+      use: {
+        browserName: "firefox",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_FIREFOX) && {
+          storageState: AUTH_FIREFOX,
+        }),
+      },
+      dependencies: ["regression-setup-firefox", "regression-chromium"],
+    },
+
+    /* =========================================================
+       4f. Regression suite — WebKit
+       ========================================================= */
+    {
+      name: "regression-webkit",
+      testMatch: /regression\/.*\.spec\.ts/,
+      tsconfig: "./tests/regression/tsconfig.json",
+      use: {
+        browserName: "webkit",
+        baseURL: process.env.BASE_URL,
+        ...(fs.existsSync(AUTH_WEBKIT) && {
+          storageState: AUTH_WEBKIT,
+        }),
+      },
+      dependencies: ["regression-setup-webkit", "regression-firefox"],
     },
   ],
 });
