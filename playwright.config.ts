@@ -54,17 +54,16 @@ export default defineConfig({
     // Sets the default viewport size for all tests
     viewport: { width: 1280, height: 720 },
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on",
+    /* Collect trace, video and screenshots only on failure to reduce artifact size. */
+    trace: "retain-on-failure",
 
-    /* Always collect video and screenshots, even when tests pass. See https://playwright.dev/docs/video-and-screenshots */
     video: {
-      mode: "on",
+      mode: "retain-on-failure",
       size: { width: 1280, height: 720 },
     },
 
     screenshot: {
-      mode: "on",
+      mode: "only-on-failure",
       fullPage: true,
     },
   },
