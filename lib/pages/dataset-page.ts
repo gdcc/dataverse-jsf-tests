@@ -53,10 +53,14 @@ export class DatasetPage {
     await this.page.getByRole("link", { name: "Publish Dataset" }).click();
     await this.page.locator('[id="datasetForm:releaseDatasetButton"]').click();
     // Dataverse locks the dataset while it finalizes the publish, then
-    // reloads the page; the Publish link is gone once that has happened.
-    await expect(this.page.getByRole("link", { name: "Publish Dataset" })).toBeHidden({
-      timeout: 60_000,
-    });
+    // reloads the page. The Publish link vanishes as soon as the lock starts,
+    // so wait for the released-version label ("Version 1.0") instead.
+    await expect(
+      this.page.locator("#datasetVersionBlock .label-default", {
+        hasText: /^\s*Version \d+\.\d+\s*$/,
+      }),
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(this.page.getByRole("link", { name: "Publish Dataset" })).toBeHidden();
   }
 
   /**
