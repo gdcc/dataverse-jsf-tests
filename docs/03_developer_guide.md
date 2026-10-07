@@ -1,7 +1,5 @@
 Title: "03. Developer Guide — Setup, Running Tests, and Playwright Tooling"
-Author: "Snehashish Reddy Manda"
-Email: "msreddy@unc.edu"
-Date: "September 2026"
+Date: "October 2026"
 ```
 
 # 03. Developer Guide
@@ -9,7 +7,8 @@ Date: "September 2026"
 This is the single reference for getting this repo running locally, running
 exactly the tests you want to run, and using Playwright's built-in debugging
 tools. For what each individual test *does*, see
-[`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md). For the authentication
+[`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md). To add a test, jump to
+[Section 3](#3-writing-a-new-test). For the authentication
 adapters, see [`01_shibboleth_auth.md`](01_shibboleth_auth.md).
 
 ---
@@ -28,7 +27,7 @@ adapters, see [`01_shibboleth_auth.md`](01_shibboleth_auth.md).
 
 ```bash
 # 1. Clone into an empty folder
-git clone https://github.com/uncch-rdmc/dataverse-jsf-tests.git
+git clone <url-of-this-repository> dataverse-jsf-tests
 cd dataverse-jsf-tests   # the folder containing playwright.config.ts
 
 # 2. Install npm dependencies
@@ -53,11 +52,11 @@ BASE_URL=https://your-dataverse-instance.example.edu
 DV_USERNAME=your-username
 DV_PASSWORD=your-password
 DV_FULL_NAME=Your Full Name
-LOGIN_ADAPTER=incommon-seamlessaccess   # or shibboleth-direct / builtin
+LOGIN_ADAPTER=builtin   # or shibboleth-direct / incommon-seamlessaccess
 ```
 
 Everything else in `.env.example` is optional and defaults sensibly. The full
-reference is in [Section 4](#4-environment-variable-reference) below.
+reference is in [Section 5](#5-environment-variable-reference) below.
 
 `.env` is gitignored — it is never committed, and there is nothing in the
 repo you need to configure besides this file.
@@ -68,169 +67,186 @@ repo you need to configure besides this file.
 npx playwright test
 ```
 
-The first run will:
-1. Run **preflight** (Chromium only — a fast health check of the UNC-branded
-   header/footer; see [Section 2](#2-running-specific-tests-and-browsers) to skip this on non-UNC instances)
-2. Authenticate against `BASE_URL` using your configured `LOGIN_ADAPTER`
-   (interactively completing a Duo push if required — see
-   [`01_shibboleth_auth.md`](01_shibboleth_auth.md)) and cache the session to
-   `playwright/.auth/`
-3. Run the full `@standard` + `@21cfr` suite on Chromium, then Firefox, then
-   WebKit, strictly in that order (see why in
-   [Section 2](#2-running-specific-tests-and-browsers))
+This runs every test, in Chromium, then Firefox, then WebKit. For each
+browser it first logs in (interactively completing a Duo push if your
+adapter needs one — see [`01_shibboleth_auth.md`](01_shibboleth_auth.md))
+and caches the session in `playwright/.auth/`, so later runs skip the login.
 
-This is a lot for a first run — expect it to take a while. Read Section 2
-below before your first run if you only want to exercise one browser or one
-test.
+A full three-browser run takes a while. Section 2 shows how to run one
+browser or one file.
 
 ---
 
 ## 2. Running Specific Tests and Browsers
 
-### The project list
+### Layout
 
-`playwright.config.ts` defines these projects. Anything you pass to
-`--project` must match one of these names exactly:
+There is **one** suite. Every `*.spec.ts` under `tests/` runs in every
+browser; nothing is tagged, numbered, or split into separate suites.
+Specs are grouped by the part of Dataverse they exercise:
+
+```
+tests/
+  auth.setup.ts        log in once per browser (not a test)
+  account/             the logged-in user's account pages
+  collections/         creating and configuring collections
+  datasets/            creating, editing, publishing, downloading datasets
+  test-data/           files the tests upload
+```
+
+### The project list
 
 | Project | What it runs | Depends on |
 |---|---|---|
-| `preflight` | `01-preflight.spec.ts` only, Chromium | — |
-| `setup-chromium` / `setup-firefox` / `setup-webkit` | `auth.setup.ts` (login) | — |
-| `suite-chromium` | All `tests/suite/*.spec.ts` except preflight/auth, Chromium | `setup-chromium` |
-| `suite-firefox` | Same suite, Firefox | `setup-firefox`, **`suite-chromium`** |
-| `suite-webkit` | Same suite, WebKit | `setup-webkit`, **`suite-firefox`** |
-| `regression-setup-chromium` / `-firefox` / `-webkit` | `auth.setup.ts` (login for regression) | — |
-| `regression-chromium` | `tests/regression/*.spec.ts`, Chromium | `regression-setup-chromium` |
-| `regression-firefox` | Same, Firefox | `regression-setup-firefox`, **`regression-chromium`** |
-| `regression-webkit` | Same, WebKit | `regression-setup-webkit`, **`regression-firefox`** |
+| `setup-chromium` / `setup-firefox` / `setup-webkit` | `tests/auth.setup.ts` (login) | — |
+| `chromium` | every spec, Chromium | `setup-chromium` |
+| `firefox` | every spec, Firefox | `setup-firefox`, **`chromium`** |
+| `webkit` | every spec, WebKit | `setup-webkit`, **`firefox`** |
 
-### ⚠️ You cannot cleanly run "just Firefox" or "just WebKit"
+### ⚠️ `--project=firefox` also runs Chromium
 
-The Firefox and WebKit suite projects declare a **dependency on the browser
-before them** (bolded in the table above), specifically so that Chromium →
-Firefox → WebKit always runs in that order even if `workers` is ever raised
-above 1. This is intentional (see the comment block at the top of
-`playwright.config.ts`), but it means:
+Each browser project depends on the one before it (bolded above), so that
+Chromium → Firefox → WebKit always run in that order even if `workers` is
+raised. The consequence:
 
-- `npx playwright test --project=suite-chromium` → runs **only** Chromium. This works cleanly.
-- `npx playwright test --project=suite-firefox` → Playwright will **first run the entire Chromium suite**, then Firefox.
-- `npx playwright test --project=suite-webkit` → Playwright will run **Chromium, then Firefox, then WebKit**.
+- `npx playwright test --project=chromium` → **only** Chromium.
+- `npx playwright test --project=firefox` → Chromium first, then Firefox.
+- `npx playwright test --project=webkit` → Chromium, Firefox, then WebKit.
 
-The same chain applies to the `regression-*` projects.
+Playwright has no flag to skip a project's `dependencies`. To debug a
+Firefox- or WebKit-only failure, either accept the extra run or temporarily
+remove that project's previous-browser dependency in `playwright.config.ts`
+(don't commit it).
 
-**If you genuinely need to run only Firefox or only WebKit** (e.g. to debug a
-browser-specific failure), the supported options are:
-1. Comment out the `dependencies` array for that project in
-   `playwright.config.ts` locally (don't commit this), or
-2. Accept that the upstream browser(s) will run first.
-
-There is no CLI flag that bypasses a project's declared `dependencies`.
-
-### Running only Chromium (the common case)
+### Common invocations
 
 ```bash
-npx playwright test --project=suite-chromium
+# One browser (the usual loop while writing a test)
+npx playwright test --project=chromium
+
+# One file
+npx playwright test tests/datasets/preview-url.spec.ts --project=chromium
+
+# One folder
+npx playwright test tests/collections --project=chromium
+
+# By test title (substring or regex)
+npx playwright test --project=chromium -g "Preview URL"
 ```
 
-If your `BASE_URL` is a 21 CFR instance (no UNC-branded header/footer), also
-set `SKIP_PREFLIGHT=true` in `.env`, or preflight will fail before the suite
-even starts — see [`01-preflight.spec.ts`](../tests/suite/01-preflight.spec.ts).
+### Every test is independent
 
-### Running a single test file
+Any test can be run on its own, in any order. Each one creates the
+collections and datasets it needs, under unique names, and deletes them when
+it finishes — whether it passed or failed. No test reads state another test
+left behind, and none of them picks "the first dataset in the list".
 
-```bash
-npx playwright test tests/suite/07-guestbook.spec.ts --project=suite-chromium
-```
+The one thing tests *can't* clean up is a **published** dataset: Dataverse's
+UI has no way to delete one. Two tests publish by design
+(`datasets/dataset-lifecycle.spec.ts`, `datasets/version-history.spec.ts`)
+and each leaves one published dataset in `ROOT_DATAVERSE` per run per
+browser. Everything else is removed.
 
-A file path filter and `--project` combine (intersect), so this runs only
-the matching file(s) within that project's `testMatch` pattern.
+If a cleanup step itself fails, the test still reports its real result,
+and the report shows a **"cleanup failed"** annotation saying what was left
+behind.
 
-### Running by tag
+### Tests for optional features
 
-Every test in `tests/suite/` is tagged `@standard`, `@21cfr`, or both.
-Regression tests are tagged `@regression`.
-
-```bash
-# Only 21 CFR tests, Chromium only
-npx playwright test --project=suite-chromium --grep @21cfr
-
-# Only standard tests
-npx playwright test --project=suite-chromium --grep @standard
-
-# Everything except 21 CFR
-npx playwright test --project=suite-chromium --grep-invert @21cfr
-```
-
-### Running by test name
-
-```bash
-npx playwright test --project=suite-chromium -g "Publish Dataverse"
-```
-
-`-g` (alias for `--grep`) also matches against the test title string, not
-just tags.
-
-### Running the regression tests
-
-Regression tests are **skipped by default** — each one checks its own
-feature flag and calls `test.skip(...)` if it's not `"true"`:
-
-```bash
-# In .env:
-# CUSTOM_LICENSE_ENABLED=true
-# LOCALLY_FAIR_ENABLED=true
-
-npx playwright test --project=regression-chromium
-```
-
-### ⚠️ Test interdependencies within a suite run
-
-Several suite tests are **not independent** — they read state left behind by
-an earlier test in the same run (or a previous run):
-
-- **Tests 03 → 04 → 05 → 06** share one dataverse. Test 03
-  (`03-create-dataverse.spec.ts`) creates it and writes its identifier to a
-  gitignored file, `.s2-dataverse-id`, at the repo root
-  (`tests/suite/s02-state.ts`). Tests 04–06 read that file. If you run 04, 05,
-  or 06 in isolation without ever having run 03 (no `.s2-dataverse-id` on
-  disk), they throw immediately with a clear error telling you to run 03
-  first. If a stale `.s2-dataverse-id` exists from a previous run pointing at
-  a dataverse that no longer exists, 04–06 will fail against a 404 — delete
-  the file (`rm .s2-dataverse-id`) and re-run 03 to reset.
-- **Tests 14, 16, and 17** (`14-browse-dataset-records.spec.ts`,
-  `16-view-dataset-version-history.spec.ts`,
-  `17-download-dataset-files.spec.ts`) each open "the first dataset in the
-  results table" rather than a specific one. In a full `@21cfr` run this is
-  reliably the dataset created and published by
-  **test 13** (`13-dataset-actions.spec.ts`), which runs earlier and does not
-  clean itself up. Running 14/16/17 alone against an instance/collection with
-  no existing published dataset will fail or behave unpredictably.
-- **The regression tests** each maintain their own gitignored state files
-  (`.regression-template-name`, `.regression-custom-terms`,
-  `.regression-fair-dataverse-id`) via `tests/regression/regression-state.ts`,
-  but each is fully self-contained within its own single test (write and read
-  happen in the same test body) — this only matters if you're extending them.
-- **Test 22** (`22-dataset-permissions.spec.ts`) uses
-  `test.describe.serial`, with one dataset created once in `beforeAll` and
-  deleted in `afterAll`. If you `--grep` to a single sub-test inside it,
-  Playwright still runs `beforeAll` for the containing block (and, per
-  Playwright's serial-mode semantics, any earlier tests in the same
-  `describe.serial` group), so you can't skip straight to sub-test 3 without
-  the dataset having been created first. Set `PERMISSIONS_DATASET_PID` in
-  `.env` to point this test at an existing dataset's persistent ID instead of
-  creating/deleting a temporary one.
-
-Most other suite tests (07, 10, 11, 12, 18, 19, 20, 21) create and manage
-their own uniquely-named resources and can be run in isolation safely.
+Some tests need a Dataverse feature that not every installation has. They
+skip themselves unless the matching flag is `true` in `.env` — see
+[Section 5](#5-environment-variable-reference).
 
 ---
 
-## 3. Playwright Feature Tour
+## 3. Writing a New Test
+
+### The short version
+
+1. Create `tests/<area>/<what-it-does>.spec.ts`. No number, no tag, no
+   config change — it is picked up automatically.
+2. Import `test` and `expect` from `lib/fixtures`, **not** from
+   `@playwright/test`.
+3. Create what you need with the fixtures; never depend on existing data.
+4. Use the page objects in `lib/pages/` for anything another test also does.
+
+```ts
+import { expect, test } from "../../lib/fixtures";
+import { DatasetPage } from "../../lib/pages/dataset-page";
+import { files } from "../../lib/test-data";
+
+test("Restrict a file", async ({ page, createDataset }) => {
+  const dataset = await createDataset({ files: [files.sampleText] });
+  // `page` is now on the new dataset's page.
+  const datasetPage = new DatasetPage(page);
+  // ...
+});
+```
+
+### Fixtures (`lib/fixtures.ts`)
+
+| Fixture | What it does |
+|---|---|
+| `createCollection(options?)` | Creates a uniquely-named child of `ROOT_DATAVERSE` (or of `options.parent`) and returns `{ alias, path }`. Deleted after the test. `options.customize(page)` lets you fill extra form fields before it's submitted. |
+| `createDataset(options?)` | Creates a uniquely-named draft dataset in `ROOT_DATAVERSE` (or `options.collection`), optionally with `options.files`, and returns `{ title, url }`. Leaves `page` on the dataset. Deleted after the test unless it was published. |
+| `trackDataset({ title, url })` | For tests where *creating* the dataset is the thing under test: create it yourself, then hand it to the same cleanup. |
+| `cleanup.add(label, async (page) => …)` | Any other teardown (a template, a guestbook, an API token…). Runs after the test, pass or fail, in a fresh tab, newest first — so things created inside a collection are removed before the collection. |
+
+Rule of thumb: if your test changes a collection's settings (roles,
+templates, guestbooks, theme), do it on a collection from
+`createCollection()`, never on `ROOT_DATAVERSE` itself.
+
+### Page objects (`lib/pages/`)
+
+| File | Covers |
+|---|---|
+| `collection-page.ts` | A collection's page: Edit menu, Add Data, publish, delete |
+| `collection-form.ts` | The New Dataverse form |
+| `dataset-form.ts` | The dataset metadata form (create, edit, templates): fields, Subject, file upload, save |
+| `dataset-page.ts` | A dataset's page: Edit menu, tabs, select files, publish, delete |
+| `permissions-page.ts` | Role assignment for collections and datasets |
+| `templates-page.ts` | A collection's Dataset Templates page |
+
+Add a method to a page object when a second test needs the same
+interaction; until then it's fine to keep it in the spec.
+
+### Other helpers
+
+| Module | Use it for |
+|---|---|
+| `lib/env.ts` | Reading configuration. Never read `process.env` in a test. |
+| `lib/naming.ts` | `uniqueName("Prefix")` / `uniqueAlias()` for anything you create by hand. |
+| `lib/test-data.ts` | Absolute paths to upload fixtures (`files.*`, `images.*`) and default metadata. Add new fixture files to `tests/test-data/` and list them here. |
+| `lib/ajax.ts` | `waitForAjaxIdle(page)` — for the rare case where there's no element to assert on after a PrimeFaces partial update. |
+
+### Habits to keep (and the ones this suite has dropped)
+
+- **Find your own data by name or URL.** Never click the first row of a
+  results table — on a shared instance that's whatever someone else
+  created last.
+- **Don't sleep.** No `page.waitForTimeout(...)`. Wait for the thing you
+  actually need with a web-first assertion
+  (`await expect(locator).toBeVisible()`), or `waitForAjaxIdle`. For search
+  results, which depend on asynchronous indexing, retry with
+  `expect(async () => { … }).toPass()` (see `datasets/search.spec.ts`).
+- **No hard-coded instance details.** URLs, collection paths, and
+  credentials all come from `.env`. Tests must pass on a stock Dataverse;
+  generic metadata values live in `lib/test-data.ts`.
+- **No JSF-generated ids.** Ids like `j_idt218` change whenever the page
+  template changes. Prefer roles and labels
+  (`getByRole("button", { name: "Save Changes" })`), then stable ids that
+  appear in Dataverse's `.xhtml` source (`datasetForm:editMetadata`), then
+  suffix matches (`[id$=":questionText"]`).
+- **No hidden ordering.** If a test needs something, it creates it.
+
+---
+
+## 4. Playwright Feature Tour
 
 A few Playwright capabilities you'll want while writing or debugging tests
 against this repo's PrimeFaces/JSF UI (which is heavy on AJAX re-renders and
-dynamic element IDs — see the inline comments throughout `tests/suite/*.spec.ts`
-for the workarounds already in place).
+dynamic element IDs — see the page objects in `lib/pages/` for the
+workarounds already in place).
 
 ### Headed mode — watch the browser
 
@@ -238,14 +254,14 @@ The config sets `headless: true` globally, so `npx playwright test` runs with
 no visible browser by default. Override on the command line:
 
 ```bash
-npx playwright test --project=suite-chromium tests/suite/07-guestbook.spec.ts --headed
+npx playwright test --project=chromium tests/collections/guestbooks.spec.ts --headed
 ```
 
-Note: `playwright.config.ts` also sets `launchOptions.slowMo: 2500` (2.5
-seconds between actions) **globally, including headless runs** — this was
-added for stability against a slow/JSF-heavy target and applies whether or
-not you pass `--headed`. Expect even a single headed test to feel slow; that
-slowdown is intentional, not a bug in your invocation.
+Note: `playwright.config.ts` also sets `launchOptions.slowMo` (2.5 seconds
+between actions by default) **globally, including headless runs** — it was
+added for stability against a slow, JSF-heavy target. Set `SLOW_MO=0` in
+`.env` for much faster local iteration; leave it at the default for CI-like
+runs.
 
 ### UI Mode — the interactive test runner
 
@@ -256,15 +272,15 @@ npx playwright test --ui
 Opens a GUI with a timeline of every action, a live DOM snapshot at each
 step, and the ability to re-run individual tests and watch them. This is the
 fastest way to understand *why* a JSF selector didn't match. Because of the
-project dependency chain (Section 2), scope `--ui` to a single file/project
-where possible, e.g. `npx playwright test --ui tests/suite/07-guestbook.spec.ts`.
+project dependency chain ([Section 2](#2-running-specific-tests-and-browsers)), scope `--ui` to a single file/project
+where possible, e.g. `npx playwright test --ui tests/collections/guestbooks.spec.ts`.
 
 ### Debug mode — step through actions
 
 ```bash
-npx playwright test --project=suite-chromium tests/suite/07-guestbook.spec.ts --debug
+npx playwright test --project=chromium tests/collections/guestbooks.spec.ts --debug
 # or:
-PWDEBUG=1 npx playwright test --project=suite-chromium tests/suite/07-guestbook.spec.ts
+PWDEBUG=1 npx playwright test --project=chromium tests/collections/guestbooks.spec.ts
 ```
 
 Opens the Playwright Inspector: runs headed, pauses before each action, and
@@ -288,7 +304,7 @@ faster than re-running the test to reproduce a flaky failure.
 To force a trace on every test (not just failures) while debugging:
 
 ```bash
-npx playwright test --project=suite-chromium tests/suite/07-guestbook.spec.ts --trace on
+npx playwright test --project=chromium tests/collections/guestbooks.spec.ts --trace on
 ```
 
 ### HTML report
@@ -326,7 +342,7 @@ For verbose Playwright-internal API logging (useful when a selector times
 out and you're not sure why), run with:
 
 ```bash
-DEBUG=pw:api npx playwright test --project=suite-chromium tests/suite/07-guestbook.spec.ts
+DEBUG=pw:api npx playwright test --project=chromium tests/collections/guestbooks.spec.ts
 ```
 
 ### Codegen — recording new selectors
@@ -345,62 +361,55 @@ widget.
 
 ---
 
-## 4. Environment Variable Reference
+## 5. Environment Variable Reference
 
-All variables are read from `.env` at the repo root (loaded by
-`playwright.config.ts` via `dotenv`). The authoritative list of examples and
-defaults lives in [`.env.example`](../.env.example) — this table adds the
-"why," "who consumes it," and troubleshooting context that file doesn't have
-room for.
+All variables are read from `.env` at the repo root, through
+[`lib/env.ts`](../lib/env.ts) — the only place in the codebase that reads
+`process.env`. The
+authoritative list of examples lives in [`.env.example`](../.env.example).
 
 ### Required
 
-| Variable | Purpose | Consumed by |
-|---|---|---|
-| `BASE_URL` | The single Dataverse instance under test (no trailing slash). Also used to derive the per-endpoint auth cache filename in `playwright/.auth/`. | `playwright.config.ts`, `lib/auth-file.ts`, every test's `page.goto(...)` calls relative to it |
-| `DV_USERNAME` | Login username/email for the account running the suite. | `tests/suite/auth.setup.ts`, login adapters |
-| `DV_PASSWORD` | Login password for that account. | Same |
-| `DV_FULL_NAME` | The exact display name Dataverse shows in the navbar after login — used to detect an already-authenticated session (avoids re-running the login flow and re-triggering Duo on every invocation). | `tests/suite/auth.setup.ts` |
-| `LOGIN_ADAPTER` | Which authentication flow to run: `shibboleth-direct`, `incommon-seamlessaccess`, or `builtin`. | `lib/login-adapters/index.ts` |
+| Variable | Purpose |
+|---|---|
+| `BASE_URL` | The Dataverse instance under test (no trailing slash). Also determines the auth-cache filename in `playwright/.auth/`. |
+| `DV_USERNAME` | Login username/email for the account running the suite. |
+| `DV_PASSWORD` | Login password for that account. |
+| `DV_FULL_NAME` | The exact display name Dataverse shows in the navbar after login — used to detect a still-valid saved session (so Duo isn't re-triggered every run). |
+| `LOGIN_ADAPTER` | Which login flow to run: `shibboleth-direct`, `incommon-seamlessaccess`, or `builtin`. |
 
-If any required variable is missing, the relevant setup step throws
-immediately with a message naming the missing variable — you don't have to
-guess which one.
+A missing required variable fails with a message naming it.
 
-### Optional — general
+### Optional
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `ROOT_DATAVERSE` | `/dataverse/unc` | The parent collection path most tests operate under. Set to `/` if your instance's root **is** the top-level dataverse. Every test that starts with `page.goto(process.env.ROOT_DATAVERSE ?? "/")` (nearly all of them) depends on this. |
-| `SKIP_PREFLIGHT` | unset (`false`) | Set to `true` to make `01-preflight.spec.ts` return immediately without checking UNC-specific header/footer branding. **Required** when `BASE_URL` points at a non-UNC-branded (e.g. 21 CFR-only) instance. |
+| `ROOT_DATAVERSE` | `/dataverse/root` | The collection the suite works inside. Tests create (and delete) their own child collections and datasets here. The test account needs permission to add both. |
+| `CUSTOM_LICENSE_ENABLED` | `false` | Set `true` if the instance offers Custom Dataset Terms; enables `datasets/default-custom-license.spec.ts`. |
+| `LOCALLY_FAIR_ENABLED` | `false` | Set `true` if the instance has the Locally FAIR contact field on the collection form; enables `datasets/locally-fair-download.spec.ts`. Not enabled on the Docker build IQSS CI uses (see [`backlog.md`](backlog.md)). |
+| `SLOW_MO` | `2500` | Milliseconds to pause between actions. `0` for fast local runs. |
 
-### Optional — login-adapter specific
+### Login-adapter specific (required by that adapter only)
 
-| Variable | Default | Used by adapter |
-|---|---|---|
-| `IDP_SELECTOR_VALUE` | `https://sso.unc.edu/idp` | `shibboleth-direct` — the `<option>` value selected in `#idpSelectSelector`. |
-| `INCOMMON_INSTITUTION_SEARCH` | `chapel hill` | `incommon-seamlessaccess` — text typed into the SeamlessAccess institution search box. |
-| `INCOMMON_INSTITUTION_LINK` | `University of North Carolina` | `incommon-seamlessaccess` — accessible name (or partial match) of the institution result link to click. |
+| Variable | Used by adapter |
+|---|---|
+| `IDP_SELECTOR_VALUE` | `shibboleth-direct` — the `<option>` value (IdP entity ID) selected in `#idpSelectSelector`. |
+| `INCOMMON_INSTITUTION_SEARCH` | `incommon-seamlessaccess` — text typed into the SeamlessAccess institution search box. |
+| `INCOMMON_INSTITUTION_LINK` | `incommon-seamlessaccess` — accessible name (or partial match) of the institution result link to click. |
 
 See [`01_shibboleth_auth.md`](01_shibboleth_auth.md) for the full login flow
 each adapter drives, and how Duo 2FA and session-cookie persistence work.
 
-### Optional — regression feature flags
+### Removed
 
-| Variable | Default | Gates |
-|---|---|---|
-| `CUSTOM_LICENSE_ENABLED` | `false` | `tests/regression/dataset-creation-default-custom-license.spec.ts`. Set `true` only if your instance has Custom Dataset Terms enabled. |
-| `LOCALLY_FAIR_ENABLED` | `false` | `tests/regression/dataset-download-locally-fair.spec.ts`. Set `true` only if your instance has the "Locally FAIR" contact feature enabled — **not enabled on the standard Docker deployment used by Dataverse's own GitHub Actions CI**, per [`backlog.md`](backlog.md). |
-
-### Optional — undocumented in `.env.example`, discovered in test code
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `PERMISSIONS_DATASET_PID` | unset | Read by `22-dataset-permissions.spec.ts` only. If set to an existing dataset's persistent identifier (e.g. `doi:10.5072/FK2/ABCD12`), the permissions tests operate on that dataset instead of creating and deleting a temporary one in `beforeAll`/`afterAll`. Useful if the test account can't create datasets at `ROOT_DATAVERSE`, or to avoid churn when iterating on this file repeatedly. **This variable is not currently listed in `.env.example` — add it there if you rely on it, so the next person finds it without reading source.** |
+These no longer do anything and can be deleted from old `.env` files:
+`SKIP_PREFLIGHT` (the installation-specific preflight test was removed) and
+`PERMISSIONS_DATASET_PID` (the permissions tests always create their own
+dataset now).
 
 ---
 
-## 5. Where This Suite Actually Fits: Repo Lineage and CI/CD
+## 6. Where This Suite Actually Fits: Repo Lineage and CI/CD
 
 **There is no GitHub Actions workflow (or any other CI system) in *this*
 repository that runs the Playwright suite.** `.github/workflows/` does not
@@ -414,7 +423,7 @@ Three repositories are involved, and it's important to keep them straight:
 
 | Repo | Role |
 |---|---|
-| `uncch-rdmc/dataverse-jsf-tests` (this repo) | A UNC-maintained prototype/staging fork — where new tests are drafted before being merged upstream into the canonical suite. |
+| This repository | A prototype/staging fork — where new tests are drafted before being merged upstream into the canonical suite. |
 | [`gdcc/dataverse-jsf-tests`](https://github.com/gdcc/dataverse-jsf-tests) | The **canonical upstream test suite**, maintained by the Global Dataverse Community Consortium. This is the copy that CI actually runs (see below) — **not** this fork. |
 | [`IQSS/dataverse`](https://github.com/IQSS/dataverse) | The Dataverse application itself. Its own CI checks out `gdcc/dataverse-jsf-tests` and runs it against a freshly-built copy of the application, on every push/PR to `develop`/`master`. |
 
@@ -422,9 +431,11 @@ Three repositories are involved, and it's important to keep them straight:
 IQSS's CI until it is merged into `gdcc/dataverse-jsf-tests`. Treat this repo
 as pre-upstream staging, not as the thing CI is actually testing.
 
-As of this writing, `gdcc/dataverse-jsf-tests` has the same 22 spec files as
-this fork (verified directly), so [`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md)
-describes what that upstream CI run actually exercises. One divergence to be
+`gdcc/dataverse-jsf-tests` still has the older numbered `tests/suite/` +
+`tests/regression/` layout; this fork's restructure (feature folders,
+fixtures, no tags) has not been merged upstream yet, so
+[`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md) describes this fork, not
+what upstream CI currently runs. One further divergence to be
 aware of if/when this fork is merged upstream: `gdcc/dataverse-jsf-tests`'s
 `package.json` still uses the old `"kunai-runner"` package name that this
 fork has since dropped (see the note at the end of this section) — that
@@ -454,11 +465,9 @@ doc-only changes). In order, it:
    SKIP_PREFLIGHT=true
    ```
 
-   This is also why `01-preflight.spec.ts` (which asserts UNC-specific
-   branding) would fail there without `SKIP_PREFLIGHT=true`, and why the
-   root collection is `/dataverse/root` rather than UNC's `/dataverse/unc` —
-   `/dataverse/root` is the vanilla Dataverse Docker image's default
-   top-level collection.
+   `SKIP_PREFLIGHT` is ignored by this fork (it has no installation-specific
+   preflight test). `/dataverse/root` is the vanilla Dataverse Docker
+   image's top-level collection — and this suite's default.
 7. On every run (pass or fail), uploads the Playwright HTML report and every
    container's Docker logs as workflow artifacts — check those first when a
    CI run fails and you can't reproduce it locally.
@@ -481,16 +490,16 @@ package, which is no longer how it's distributed.
 
 ---
 
-## 6. Troubleshooting Setup Issues
+## 7. Troubleshooting
 
 | Symptom | Likely cause / fix |
 |---|---|
-| `Missing required environment variable "X"` | You skipped `cp .env.example .env` or left a required field blank. See Section 4. |
-| Preflight test fails immediately on header/footer assertions | You're pointing at a non-UNC-branded instance. Set `SKIP_PREFLIGHT=true`. |
-| Auth setup hangs or repeatedly re-triggers Duo | Your cached session in `playwright/.auth/<slug>-<browser>.json` expired or was never trusted long enough. See [`01_shibboleth_auth.md`](01_shibboleth_auth.md) — approve "Yes, trust this browser" for a 7-day cookie, and delete the stale auth file to force a clean re-login. |
-| `Dataverse identifier state file not found at: .s2-dataverse-id` | You ran test 04/05/06 without ever running test 03 in this working copy. Run `03-create-dataverse.spec.ts` first (see Section 2). |
+| `Missing required environment variable "X"` | You skipped `cp .env.example .env` or left a required field blank. See Section 5. |
+| Auth setup hangs or repeatedly re-triggers Duo | The cached session in `playwright/.auth/<slug>-<browser>.json` expired. See [`01_shibboleth_auth.md`](01_shibboleth_auth.md) — approve "Yes, trust this browser" for a 7-day cookie, and delete the stale auth file to force a clean re-login. |
+| A test's report shows a "cleanup failed" annotation | Something it created couldn't be deleted; the annotation says what. Usually a collection that still holds a published dataset. Safe to delete by hand. |
+| Creating a collection or dataset fails at the very first step | The test account can't add content to `ROOT_DATAVERSE` (default `/dataverse/root`). Point it at a collection where it can. |
 | `npx playwright test` errors about missing browser binaries | Run `npx playwright install` (add `--with-deps` on Linux). |
-| Every action feels extremely slow, even headless | Expected — `launchOptions.slowMo: 2500` is set globally in `playwright.config.ts` for stability. Not a misconfiguration on your end. |
-| Regression test reports "skipped" | Its feature flag (`CUSTOM_LICENSE_ENABLED` / `LOCALLY_FAIR_ENABLED`) isn't `true`. This is the default, expected state unless your instance has that feature. |
-| Running `--project=suite-firefox` also re-runs all of Chromium | Expected — see the dependency-chain explanation in Section 2. |
-| WebKit test for guestbook/citation download reports "skipped" | Expected — those tests explicitly skip on WebKit because it doesn't fire a `download` event for CSV/XML/RIS responses. See [`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md). |
+| Every action is very slow, even headless | `SLOW_MO` defaults to 2500 ms between actions. Set `SLOW_MO=0` in `.env`. |
+| A test reports "skipped" | Its feature flag (`CUSTOM_LICENSE_ENABLED` / `LOCALLY_FAIR_ENABLED`) isn't set, or it's one of the download tests WebKit skips. Expected. |
+| `--project=firefox` also re-runs all of Chromium | Expected — see Section 2. |
+| WebKit skips the guestbook / citation download tests | Expected — WebKit opens CSV/XML/RIS inline instead of firing a `download` event. |
