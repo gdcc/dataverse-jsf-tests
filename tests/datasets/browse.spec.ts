@@ -13,10 +13,11 @@ test("Browse to a dataset from its collection and open its metadata", async ({
   const dataset = await createDataset({ collection: alias });
 
   const collection = new CollectionPage(page);
+  // Each search result links to the dataset twice (title and thumbnail).
   const listing = page.locator("#resultsTable").getByRole("link", {
     name: dataset.title,
     exact: true,
-  });
+  }).first();
 
   // Collection listings come from the search index, which updates
   // asynchronously, so retry until the new dataset shows up.

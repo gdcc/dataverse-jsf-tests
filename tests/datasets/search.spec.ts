@@ -7,10 +7,11 @@ test("Search for a dataset by title, then run an advanced search", async ({
 }) => {
   const dataset = await createDataset();
   const collection = new CollectionPage(page);
+  // Each search result links to the dataset twice (title and thumbnail).
   const result = page.locator("#resultsTable").getByRole("link", {
     name: dataset.title,
     exact: true,
-  });
+  }).first();
 
   await test.step("basic search finds the dataset", async () => {
     // Indexing is asynchronous, so retry the search until Solr has caught up.
