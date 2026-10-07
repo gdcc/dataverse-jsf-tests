@@ -21,14 +21,14 @@ The [`scripts/combine_videos.py`](../scripts/combine_videos.py) utility stitches
 Run the Playwright suite first so that `test-results/` is populated, then:
 
 ```bash
-# Unified suite  →  test-results/suite_combined.mp4
-python scripts/combine_videos.py --suite suite
+# All Chromium tests  →  test-results/chromium_combined.mp4
+python scripts/combine_videos.py --suite chromium
 
 # Custom output filename
-python scripts/combine_videos.py --suite suite --output leadership_demo.mp4
+python scripts/combine_videos.py --suite chromium --output leadership_demo.mp4
 
 # Absolute path
-python scripts/combine_videos.py --suite suite --output ~/Desktop/demo.mp4
+python scripts/combine_videos.py --suite chromium --output ~/Desktop/demo.mp4
 ```
 
 ---
@@ -40,7 +40,7 @@ python scripts/combine_videos.py [OPTIONS]
 
 Options:
   --suite NAME       REQUIRED. Playwright project name to collect videos for.
-                     For the unified suite use 'suite'.
+                     One of: chromium, firefox, webkit.
                      Default output: test-results/<suite>_combined.mp4
   --output FILE      Custom output filename.
                      Relative paths resolve inside test-results/.
@@ -54,16 +54,16 @@ Options:
 
 ```bash
 # Default output
-python scripts/combine_videos.py --suite suite
+python scripts/combine_videos.py --suite chromium
 
 # Custom relative output (saved inside test-results/)
-python scripts/combine_videos.py --suite suite --output leadership_demo.mp4
+python scripts/combine_videos.py --suite chromium --output leadership_demo.mp4
 
 # Absolute output path
-python scripts/combine_videos.py --suite suite --output ~/Desktop/leadership_demo.mp4
+python scripts/combine_videos.py --suite chromium --output ~/Desktop/leadership_demo.mp4
 
 # Point at a CI artifact download
-python scripts/combine_videos.py --suite suite --results-root /tmp/downloaded-results
+python scripts/combine_videos.py --suite chromium --results-root /tmp/downloaded-results
 ```
 
 ---
@@ -71,7 +71,7 @@ python scripts/combine_videos.py --suite suite --results-root /tmp/downloaded-re
 ## How It Works
 
 1. **Discovery** — `os.walk()` recursively scans `test-results/` and collects every `.webm` file whose parent folder **ends with** `-<suite>`. Playwright names result folders `<spec-slug>-<test-title>-<project>`, so the project name is always the suffix.
-2. **Ordering** — Files are sorted by their full path, which preserves the lexicographic spec order (`01-preflight`, `02-account-management`, `10-assign-…`, etc.).
+2. **Ordering** — Files are sorted by their full path, so clips are grouped by spec file in alphabetical order (`account-…`, `collections-…`, `datasets-…`).
 3. **Concat list** — A temporary [ffconcat](https://ffmpeg.org/ffmpeg-formats.html#concat-1) text file is written listing all clips in order. Using the concat *demuxer* (rather than the concat *filter*) keeps the command simple and handles clips with different durations gracefully.
 4. **Encode** — ffmpeg runs a single-pass re-encode:
 
@@ -103,7 +103,7 @@ The `test-results/` directory is already listed in [`.gitignore`](../.gitignore)
 
 | Symptom | Fix |
 |---------|-----|
-| `[ERROR] No .webm files found` | Run the Playwright suite first; make sure `test-results/` is populated with folders ending in `-suite`. |
+| `[ERROR] No .webm files found` | Run the Playwright suite first; make sure `test-results/` has folders ending in `-<project>` (e.g. `-chromium`). |
 | `[ERROR] ffmpeg not found on PATH` | Install ffmpeg (see Prerequisites above). |
-| Clips appear out of order | The sort is lexicographic on the full path. The existing `01-`, `02-`, `10-` naming convention handles ordering correctly. |
+| Clips appear out of order | The sort is alphabetical on the full path, not chronological. Videos are only kept for failing tests, so this is usually a handful of unrelated clips anyway. |
 | Audio/video out of sync | Some `.webm` clips may have been recorded without audio. ffmpeg will insert silence for those segments automatically. |
