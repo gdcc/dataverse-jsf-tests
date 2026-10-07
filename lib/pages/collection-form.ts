@@ -19,7 +19,8 @@ export class CollectionForm {
 
   async create(alias: string): Promise<void> {
     await this.page.getByRole("button", { name: "Create Dataverse" }).click();
-    await expect(this.page).toHaveURL(new RegExp(`/dataverse/${alias}(\\?|$)`));
+    // Dataverse redirects to /dataverse/<alias>/ (note the trailing slash).
+    await expect(this.page).toHaveURL(new RegExp(`/dataverse/${alias}/?([?#]|$)`));
     await expect(
       this.page.getByText("You have successfully created your dataverse!"),
     ).toBeVisible();

@@ -53,6 +53,6 @@ test("Create a collection", async ({ page, createCollection }) => {
     },
   });
 
-  await expect(page).toHaveURL(new RegExp(`${collection.path}(\\?|$)`));
+  await expect(page).toHaveURL(new RegExp(`${collection.path}/?([?#]|$)`));
   await expect(page.locator('a[data-original-title="Email Dataverse Contact"]')).toBeVisible();
 });
