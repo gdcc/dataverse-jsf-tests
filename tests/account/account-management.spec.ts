@@ -1,17 +1,13 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../../lib/fixtures";
 
 /**
- * @tags @standard
- *
- * Section 1, Test #2 — Account Management
  * Exercises My Data, Notifications, Account Information, and API Token
  * from the authenticated user dropdown.
  */
 
 test(
-  "Section 1: Account Management",
-  { tag: ["@standard"] },
-  async ({ page }) => {
+  "Account menu: My Data, Notifications, Account Information, API Token",
+  async ({ page, cleanup }) => {
     await page.goto("/");
 
     const userMenuTrigger = page.locator("span#userDisplayInfoTitle");
@@ -91,8 +87,18 @@ test(
 
     const createTokenBtn = page.getByRole("button", { name: "Create Token" });
     await expect(createTokenBtn).toBeVisible();
+
+    // If the test dies before "Revoke Token" below, revoke it anyway: a
+    // leftover token hides "Create Token" and breaks the next run.
+    cleanup.add("revoke API token", async (p) => {
+      await p.goto("/dataverseuser.xhtml?selectTab=apiTokenTab");
+      const revoke = p.getByRole("button", { name: "Revoke Token" });
+      if (await revoke.isVisible()) {
+        await revoke.click();
+        await expect(p.getByRole("button", { name: "Create Token" })).toBeVisible();
+      }
+    });
     await createTokenBtn.click();
-    await page.waitForTimeout(1000);
 
     const tokenCode = page.locator("#apiToken pre code");
     await expect(tokenCode).toBeVisible();
