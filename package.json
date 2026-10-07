@@ -18,7 +18,6 @@
     "testing"
   ],
   "author": "",
-  "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.61.1",
