@@ -1,34 +1,22 @@
 Title: "Test Data"
-Author: "Snehashish Reddy Manda"
-Email: "msreddy@unc.edu"
-Date: "June 2026"
+Date: "October 2026"
 ```
 
 # What are these data files?
 
-There are three test data files in [`tests/suite/test-data/`](../tests/suite/test-data/) used by the `@21cfr` dataset action tests.
+Everything a test uploads lives in [`tests/test-data/`](../tests/test-data/).
+Tests never reference these by a relative path — use the named paths in
+[`lib/test-data.ts`](../lib/test-data.ts) (`files.sampleText`,
+`images.logo`, …), and add a new entry there when you add a file here.
 
-The content inside these files is dummy data and does not matter for the purposes of testing as long as the files themselves are not empty.
+The content of the files is dummy data; it only matters that they are
+non-empty and of the right format.
 
----
-
-## Why do these three files matter?
-
-They are used in the combined **Dataset Actions** test (`13-dataset-actions.spec.ts`) which covers tests #7 through #11 of the 21 CFR Part 11 compliance suite.
-
-### Test #7 — Create Dataset
-
-| File | Purpose |
-|---|---|
-| `sample-dataset-file.txt` | First file uploaded during dataset creation |
-| `sample-dataset-file-2.txt` | Second file uploaded during dataset creation |
-
-Two files are used rather than one for a specific reason: **zip downloads**. Downloading a zip file containing multiple `.txt` files is easier to automate than downloading a single file because Dataverse renders a distinct **Download** button when two or more files are selected. That button is straightforward to target as a Playwright selector and lets the download verification test (test #15) work reliably with minimal flakiness. The button is only enabled at a minimum of two files, so we use the bare minimum to verify the user flow.
-
-### Test #10 — Replace File
-
-| File | Purpose |
-|---|---|
-| `replaced-sample-dataset-file.txt` | Replacement for `sample-dataset-file.txt` in the existing dataset |
-
-After the replace operation the dataset should still contain two files: `replaced-sample-dataset-file.txt` and `sample-dataset-file-2.txt`. All other dataset behavior should remain unaffected.
+| File | Used by | Why |
+|---|---|---|
+| `sample-dataset-file.txt`, `sample-dataset-file-2.txt` | dataset lifecycle, download, preview URL, permissions, Locally FAIR | Two files rather than one because Dataverse only offers its single zip **Download** button once two or more files are selected. |
+| `replaced-sample-dataset-file.txt` | dataset lifecycle | Replaces `sample-dataset-file.txt`; afterwards the dataset lists it alongside `sample-dataset-file-2.txt`. |
+| `sample-data.csv`, `demo-archive.zip`, `demo-document.pdf`, `demo-code.R`, `ro-crate-metadata.json` | file upload (non-ingest) | Common non-tabular formats. `demo-archive.zip` is unpacked on upload into `readme.txt` and `data.csv`. |
+| `demo-data.dta`, `demo-data.RData`, `demo-data.sav`, `demo-data.xlsx` | file upload (tabular) | Formats that trigger Dataverse's tabular ingest. |
+| `demo-double-archive.zip`, `demo-geo.zip` | — | Not used yet; kept for future zip-in-zip and geospatial upload tests. |
+| `theme/logo.png`, `theme/thumbnail.png`, `theme/footer.png` | collection theme | Images for the Theme + Widgets tests. |
