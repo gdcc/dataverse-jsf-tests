@@ -34,16 +34,20 @@ export class DatasetForm {
     });
   }
 
+  // Inputs are matched by the id suffix their label points at
+  // (`…:inputText`, `…:description`), not by input type: on the template
+  // page every field also has a hidden "Custom Instructions" text input.
+
   get titleInput(): Locator {
-    return this.primitiveField("Title").locator('input[type="text"]').first();
+    return this.primitiveField("Title").locator('[id$=":inputText"]').first();
   }
 
   get descriptionInput(): Locator {
-    return this.compoundField("dsDescription").locator("textarea").first();
+    return this.compoundField("dsDescription").locator('[id$=":description"]').first();
   }
 
   get authorNameInput(): Locator {
-    return this.compoundField("author").locator('input[type="text"]').first();
+    return this.compoundField("author").getByRole("textbox", { name: /^Name\b/ });
   }
 
   get contactEmailInput(): Locator {
