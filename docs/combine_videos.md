@@ -105,5 +105,5 @@ The `test-results/` directory is already listed in [`.gitignore`](../.gitignore)
 |---------|-----|
 | `[ERROR] No .webm files found` | Run the Playwright suite first; make sure `test-results/` has folders ending in `-<project>` (e.g. `-chromium`). |
 | `[ERROR] ffmpeg not found on PATH` | Install ffmpeg (see Prerequisites above). |
-| Clips appear out of order | The sort is alphabetical on the full path, not chronological. Videos are only kept for failing tests, so this is usually a handful of unrelated clips anyway. |
+| Clips appear out of order | The sort is alphabetical on the full path, not chronological. |
 | Audio/video out of sync | Some `.webm` clips may have been recorded without audio. ffmpeg will insert silence for those segments automatically. |

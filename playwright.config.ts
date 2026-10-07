@@ -35,8 +35,8 @@ export default defineConfig({
       slowMo: env.slowMo,
     },
     viewport: { width: 1280, height: 720 },
-    trace: "retain-on-failure",
-    video: { mode: "retain-on-failure", size: { width: 1280, height: 720 } },
+    trace: "on",
+    video: { mode: "on", size: { width: 1280, height: 720 } },
     screenshot: { mode: "only-on-failure", fullPage: true },
   },
 

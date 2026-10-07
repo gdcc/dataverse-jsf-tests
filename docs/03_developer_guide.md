@@ -287,25 +287,19 @@ Opens the Playwright Inspector: runs headed, pauses before each action, and
 lets you step forward one action at a time or type Playwright API calls into
 a console to probe selectors live against the current page.
 
-### Trace Viewer — replaying a failed run after the fact
+### Trace Viewer — replaying a run after the fact
 
-The config retains a trace only for failing tests (`trace: "retain-on-failure"`).
-After a failing run:
+The config records a trace for every test, passed or failed (`trace: "on"`).
+After a run:
 
 ```bash
-# The failure report tells you the exact path; or find it under test-results/
+# The HTML report links each test's trace; or find it under test-results/
 npx playwright show-trace test-results/<test-folder>/trace.zip
 ```
 
 The trace viewer gives you a scrubbable timeline with DOM snapshots, network
-requests, and console output for every step of the failed test — usually
+requests, and console output for every step of the test — usually
 faster than re-running the test to reproduce a flaky failure.
-
-To force a trace on every test (not just failures) while debugging:
-
-```bash
-npx playwright test --project=chromium tests/collections/guestbooks.spec.ts --trace on
-```
 
 ### HTML report
 
@@ -317,13 +311,14 @@ npx playwright show-report
 ```
 
 Opens the report (default output folder: `playwright-report/`, gitignored)
-in your browser — pass/fail summary, per-test duration, and, for failures,
-embedded screenshots/videos/trace links.
+in your browser — pass/fail summary, per-test duration, and embedded
+videos and trace links for every test (screenshots for failures).
 
 ### Videos and screenshots
 
-Both are retained **only on failure** (`video: { mode: "retain-on-failure" }`,
-`screenshot: { mode: "only-on-failure" }`), written under `test-results/`
+Every test is recorded on video, passed or failed (`video: { mode: "on" }`);
+screenshots are taken only on failure (`screenshot: { mode: "only-on-failure" }`).
+Both are written under `test-results/`
 (gitignored). See [`combine_videos.md`](combine_videos.md) for a script that
 stitches a full run's clips into one MP4 for sharing.
 
