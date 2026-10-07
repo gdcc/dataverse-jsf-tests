@@ -17,7 +17,7 @@
  *
  * Usage in a setup file:
  *
- *   import { getLoginAdapter } from "../../lib/login-adapters";
+ *   import { getLoginAdapter } from "../lib/login-adapters";
  *   const adapter = getLoginAdapter();
  *   await adapter.login(page, credentials);
  */
@@ -31,6 +31,7 @@ import type { LoginAdapter, LoginAdapterName } from "./types";
 import { ShibbolethDirectAdapter } from "./shibboleth-direct";
 import { InCommonSeamlessAccessAdapter } from "./incommon-seamlessaccess";
 import { BuiltinAdapter } from "./builtin";
+import { env } from "../env";
 
 /**
  * Returns the LoginAdapter configured via the `LOGIN_ADAPTER` env var.
@@ -38,15 +39,7 @@ import { BuiltinAdapter } from "./builtin";
  * @throws {Error}  When the env var is missing or the adapter name is unknown.
  */
 export function getLoginAdapter(): LoginAdapter {
-  const adapterName = process.env.LOGIN_ADAPTER;
-
-  if (!adapterName) {
-    throw new Error(
-      `Missing required environment variable "LOGIN_ADAPTER". ` +
-        `Set it to one of: shibboleth-direct, incommon-seamlessaccess, builtin.`,
-    );
-  }
-
+  const adapterName = env.loginAdapter;
   const normalized = adapterName.trim().toLowerCase() as LoginAdapterName;
 
   switch (normalized) {
