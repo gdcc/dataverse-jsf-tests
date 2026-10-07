@@ -10,7 +10,7 @@ export class DatasetPage {
   }
 
   get editButton(): Locator {
-    return this.page.locator('[id="editDataSet"]');
+    return this.page.locator('[id="editDataSet"]').first();
   }
 
   get filesTable(): Locator {

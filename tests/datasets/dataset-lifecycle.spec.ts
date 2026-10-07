@@ -27,7 +27,7 @@ test("Dataset lifecycle: create, edit, replace a file, publish", async ({
 
   await test.step("edit file metadata", async () => {
     await datasetPage.selectAllFiles();
-    await page.getByRole("button", { name: "Edit Files" }).click();
+    await page.getByRole("button", { name: "Edit Files" }).first().click();
     await page.getByRole("link", { name: "Metadata" }).last().click();
     await page
       .locator('[name="datasetForm:filesTable:0:fileDescription"]')
@@ -40,7 +40,7 @@ test("Dataset lifecycle: create, edit, replace a file, publish", async ({
     await datasetPage.filesTable
       .getByRole("link", { name: "sample-dataset-file.txt", exact: true })
       .click();
-    await page.getByRole("button", { name: "Edit File" }).click();
+    await page.getByRole("button", { name: "Edit File" }).first().click();
     await page.getByRole("link", { name: "Replace" }).click();
     await page.locator('[id="datasetForm:fileUpload_input"]').setInputFiles(files.replacementText);
     await page.getByRole("button", { name: "Save Changes" }).last().click();

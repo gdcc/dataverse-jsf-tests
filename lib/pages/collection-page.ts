@@ -17,7 +17,9 @@ export class CollectionPage {
 
   get editButton(): Locator {
     // Not an exact match: the pencil icon is part of the accessible name ("✏ Edit").
-    return this.page.getByRole("button", { name: /Edit/i });
+    // `.first()`: other "Edit" buttons can share the page (e.g. on root, once
+    // other suites have added content), which would break strict mode.
+    return this.page.getByRole("button", { name: /Edit/i }).first();
   }
 
   get successAlert(): Locator {
