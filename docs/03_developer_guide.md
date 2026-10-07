@@ -312,12 +312,12 @@ npx playwright show-report
 
 Opens the report (default output folder: `playwright-report/`, gitignored)
 in your browser — pass/fail summary, per-test duration, and embedded
-videos and trace links for every test (screenshots for failures).
+screenshots, videos and trace links for every test.
 
 ### Videos and screenshots
 
-Every test is recorded on video, passed or failed (`video: { mode: "on" }`);
-screenshots are taken only on failure (`screenshot: { mode: "only-on-failure" }`).
+Every test is recorded on video and gets a full-page screenshot at the end,
+passed or failed (`video: { mode: "on" }`, `screenshot: { mode: "on" }`).
 Both are written under `test-results/`
 (gitignored). See [`combine_videos.md`](combine_videos.md) for a script that
 stitches a full run's clips into one MP4 for sharing.

@@ -37,7 +37,7 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
     trace: "on",
     video: { mode: "on", size: { width: 1280, height: 720 } },
-    screenshot: { mode: "only-on-failure", fullPage: true },
+    screenshot: { mode: "on", fullPage: true },
   },
 
   projects: browsers.flatMap((browserName, i) => [
