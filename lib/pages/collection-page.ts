@@ -16,7 +16,8 @@ export class CollectionPage {
   }
 
   get editButton(): Locator {
-    return this.page.getByRole("button", { name: "Edit", exact: true });
+    // Not an exact match: the pencil icon is part of the accessible name ("✏ Edit").
+    return this.page.getByRole("button", { name: /Edit/i });
   }
 
   get successAlert(): Locator {
