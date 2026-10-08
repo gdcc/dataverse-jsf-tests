@@ -3,7 +3,7 @@ High-performance Dataverse Playwright frontend testing framework and E2E automat
 
 dataverse-jsf-tests is the foundational open-source automation engine and testing scaffolding for IQSS Dataverse. Built for speed, reliability, and developer ergonomics, it provides the core test runner and DOM assertion utilities needed to validate complex frontend architectures. Designed to be highly extensible, it serves as the close-quarters framework for writing, structuring, and executing robust end-to-end web UI tests.
 
-**This repository is a staging fork** — new tests are prototyped here before being merged into the canonical upstream suite, [`gdcc/dataverse-jsf-tests`](https://github.com/gdcc/dataverse-jsf-tests). It has no CI/CD pipeline of its own; the actual pipeline that runs these tests lives in [`IQSS/dataverse`](https://github.com/IQSS/dataverse) at `.github/workflows/dataverse_jsf_tests.yml`, which checks out `gdcc/dataverse-jsf-tests` (not this fork) and runs it against a freshly-built Dataverse instance on every push/PR. See [`docs/03_developer_guide.md`](docs/03_developer_guide.md), section 6, for the full picture — including what that pipeline actually does and why a change here isn't tested by it until merged upstream.
+This repository has no CI/CD pipeline of its own. The pipeline that runs these tests lives in [`IQSS/dataverse`](https://github.com/IQSS/dataverse) at `.github/workflows/dataverse_jsf_tests.yml`: it checks out this suite and runs it against a freshly-built Dataverse instance on every push/PR. See [`docs/03_developer_guide.md`](docs/03_developer_guide.md), section 6, for what that pipeline does.
 
 ## Steps to Use Dataverse JSF Tests
 1. Clone the git repository into an empty folder

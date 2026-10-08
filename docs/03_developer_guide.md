@@ -414,31 +414,19 @@ above).
 
 ### Repo lineage
 
-Three repositories are involved, and it's important to keep them straight:
+Two repositories are involved:
 
 | Repo | Role |
 |---|---|
-| This repository | A prototype/staging fork — where new tests are drafted before being merged upstream into the canonical suite. |
-| [`gdcc/dataverse-jsf-tests`](https://github.com/gdcc/dataverse-jsf-tests) | The **canonical upstream test suite**, maintained by the Global Dataverse Community Consortium. This is the copy that CI actually runs (see below) — **not** this fork. |
-| [`IQSS/dataverse`](https://github.com/IQSS/dataverse) | The Dataverse application itself. Its own CI checks out `gdcc/dataverse-jsf-tests` and runs it against a freshly-built copy of the application, on every push/PR to `develop`/`master`. |
+| [`gdcc/dataverse-jsf-tests`](https://github.com/gdcc/dataverse-jsf-tests) (this repository) | The test suite, maintained by the Global Dataverse Community Consortium. |
+| [`IQSS/dataverse`](https://github.com/IQSS/dataverse) | The Dataverse application itself. Its own CI checks out this suite and runs it against a freshly-built copy of the application, on every push/PR to `develop`/`master`. |
 
-**Practical implication:** a change made in this fork is not exercised by
-IQSS's CI until it is merged into `gdcc/dataverse-jsf-tests`. Treat this repo
-as pre-upstream staging, not as the thing CI is actually testing.
-
-`gdcc/dataverse-jsf-tests` still has the older numbered `tests/suite/` +
-`tests/regression/` layout; this fork's restructure (feature folders,
-fixtures, no tags) has not been merged upstream yet, so
-[`TEST_SPECIFICATIONS.md`](TEST_SPECIFICATIONS.md) describes this fork, not
-what upstream CI currently runs. One further divergence to be
-aware of if/when this fork is merged upstream: `gdcc/dataverse-jsf-tests`'s
-`package.json` still uses the old `"kunai-runner"` package name that this
-fork has since dropped (see the note at the end of this section) — that
-rename hasn't propagated upstream and will need reconciling at merge time.
+**Practical implication:** a change here is exercised by IQSS's CI on the
+next push or PR to `IQSS/dataverse` after it lands on `main`.
 
 ### The actual CI/CD workflow
 
-Lives in the **`IQSS/dataverse`** repo (not here, not in `gdcc/dataverse-jsf-tests`)
+Lives in the **`IQSS/dataverse`** repo (not here)
 at **`.github/workflows/dataverse_jsf_tests.yml`**. It triggers on
 `workflow_dispatch`, and on push/PR to `develop` or `master` (ignoring
 doc-only changes). In order, it:
@@ -460,7 +448,7 @@ doc-only changes). In order, it:
    SKIP_PREFLIGHT=true
    ```
 
-   `SKIP_PREFLIGHT` is ignored by this fork (it has no installation-specific
+   `SKIP_PREFLIGHT` is ignored by this suite (it has no installation-specific
    preflight test). `/dataverse/root` is the vanilla Dataverse Docker
    image's top-level collection — and this suite's default.
 7. On every run (pass or fail), uploads the Playwright HTML report and every
