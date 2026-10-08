@@ -257,7 +257,7 @@ no visible browser by default. Override on the command line:
 npx playwright test --project=chromium tests/collections/guestbooks.spec.ts --headed
 ```
 
-Note: `playwright.config.ts` also sets `launchOptions.slowMo` (2.5 seconds
+Note: `playwright.config.ts` also sets `launchOptions.slowMo` (2 seconds
 between actions by default) **globally, including headless runs** — it was
 added for stability against a slow, JSF-heavy target. Set `SLOW_MO=0` in
 `.env` for much faster local iteration; leave it at the default for CI-like
@@ -382,7 +382,7 @@ A missing required variable fails with a message naming it.
 | `ROOT_DATAVERSE` | `/dataverse/root` | The collection the suite works inside. Tests create (and delete) their own child collections and datasets here. The test account needs permission to add both. |
 | `CUSTOM_LICENSE_ENABLED` | `false` | Set `true` if the instance offers Custom Dataset Terms; enables `datasets/default-custom-license.spec.ts`. |
 | `LOCALLY_FAIR_ENABLED` | `false` | Set `true` if the instance has the Locally FAIR contact field on the collection form; enables `datasets/locally-fair-download.spec.ts`. Not enabled on the Docker build IQSS CI uses (see [`backlog.md`](backlog.md)). |
-| `SLOW_MO` | `2500` | Milliseconds to pause between actions. `0` for fast local runs. |
+| `SLOW_MO` | `2000` | Milliseconds to pause between actions. `0` for fast local runs. |
 
 ### Login-adapter specific (required by that adapter only)
 
@@ -494,7 +494,7 @@ package, which is no longer how it's distributed.
 | A test's report shows a "cleanup failed" annotation | Something it created couldn't be deleted; the annotation says what. Usually a collection that still holds a published dataset. Safe to delete by hand. |
 | Creating a collection or dataset fails at the very first step | The test account can't add content to `ROOT_DATAVERSE` (default `/dataverse/root`). Point it at a collection where it can. |
 | `npx playwright test` errors about missing browser binaries | Run `npx playwright install` (add `--with-deps` on Linux). |
-| Every action is very slow, even headless | `SLOW_MO` defaults to 2500 ms between actions. Set `SLOW_MO=0` in `.env`. |
+| Every action is very slow, even headless | `SLOW_MO` defaults to 2000 ms between actions. Set `SLOW_MO=0` in `.env`. |
 | A test reports "skipped" | Its feature flag (`CUSTOM_LICENSE_ENABLED` / `LOCALLY_FAIR_ENABLED`) isn't set, or it's one of the download tests WebKit skips. Expected. |
 | `--project=firefox` also re-runs all of Chromium | Expected — see Section 2. |
 | WebKit skips the guestbook / citation download tests | Expected — WebKit opens CSV/XML/RIS inline instead of firing a `download` event. |

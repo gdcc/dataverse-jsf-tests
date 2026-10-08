@@ -97,6 +97,6 @@ export const env = {
   /** Milliseconds Playwright waits between actions. */
   get slowMo(): number {
     const raw = optional("SLOW_MO");
-    return raw === undefined ? 2500 : Number(raw);
+    return raw === undefined ? 2000 : Number(raw);
   },
 };
