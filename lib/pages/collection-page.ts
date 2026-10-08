@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { openDropdown } from "../dropdown";
 import { env } from "../env";
 
 /** Path of a collection page from its alias, or the configured root collection. */
@@ -33,8 +34,9 @@ export class CollectionPage {
    * the id Dataverse gives "Delete Dataverse").
    */
   async openEditMenuItem(id: string): Promise<void> {
-    await this.editButton.click();
-    await this.page.locator(`[id$="${id}"]`).first().click();
+    const item = this.page.locator(`[id$="${id}"]`).first();
+    await openDropdown(this.editButton, item);
+    await item.click();
   }
 
   async startNewDataset(): Promise<void> {

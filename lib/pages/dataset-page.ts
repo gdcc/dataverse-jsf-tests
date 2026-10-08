@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { openDropdown } from "../dropdown";
 
 /** The dataset view page (dataset.xhtml). */
 export class DatasetPage {
@@ -24,17 +25,18 @@ export class DatasetPage {
 
   /** Opens Edit Dataset → <item>, where item is the menu entry's link id. */
   async openEditMenuItem(id: string): Promise<void> {
-    await this.editButton.click();
-    await this.page.locator(`[id="datasetForm:${id}"]`).click();
+    const item = this.page.locator(`[id="datasetForm:${id}"]`);
+    await openDropdown(this.editButton, item);
+    await item.click();
   }
 
   /** Edit Dataset → Permissions → Dataset (or File). */
   async openPermissions(kind: "dataset" | "file"): Promise<void> {
-    await this.editButton.click();
-    await this.page
+    const permissions = this.page
       .locator("li.dropdown-submenu a", { hasText: "Permissions" })
-      .first()
-      .hover();
+      .first();
+    await openDropdown(this.editButton, permissions);
+    await permissions.hover();
     const id = kind === "dataset" ? "manageDatasetPermissions" : "manageFilePermissions";
     await this.page.locator(`[id="datasetForm:${id}"]`).click();
     await this.page.waitForURL(
