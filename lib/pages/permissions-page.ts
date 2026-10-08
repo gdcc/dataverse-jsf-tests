@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { waitForAjaxIdle } from "../ajax";
+import { openPopup } from "../popup";
 
 /**
  * permissions-manage.xhtml — the same page serves collections and datasets.
@@ -40,11 +41,9 @@ export class PermissionsPage {
 
   async assignRole(assignee: string, role: string): Promise<void> {
     await this.showUsersAndGroups();
-    await this.assignButton.click();
-
     const dialog = this.page.locator('[id="rolesPermissionsForm:userGroupDialog"]');
     const input = dialog.locator("input[id*='userGroupAutoComplete_input']");
-    await expect(input).toBeVisible();
+    await openPopup(this.assignButton, input);
     await input.pressSequentially(assignee, { delay: 50 });
 
     const suggestion = this.page.locator(".ui-autocomplete-item").first();
@@ -69,11 +68,11 @@ export class PermissionsPage {
 
   async removeRole(assignee: string, role: string): Promise<void> {
     await this.showUsersAndGroups();
-    await this.assignment(assignee, role).getByRole("link", { name: /Remove/ }).click();
-    await this.page
+    const confirm = this.page
       .locator('[id="rolesPermissionsForm:accessRemoveConfirm"]')
-      .getByRole("button", { name: "Continue" })
-      .click();
+      .getByRole("button", { name: "Continue" });
+    await openPopup(this.assignment(assignee, role).getByRole("link", { name: /Remove/ }), confirm);
+    await confirm.click();
     await expect(this.assignment(assignee, role)).toHaveCount(0);
   }
 }

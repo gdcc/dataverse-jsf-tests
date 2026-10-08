@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { openDropdown } from "../dropdown";
+import { openPopup } from "../popup";
 
 /** The dataset view page (dataset.xhtml). */
 export class DatasetPage {
@@ -26,7 +26,7 @@ export class DatasetPage {
   /** Opens Edit Dataset → <item>, where item is the menu entry's link id. */
   async openEditMenuItem(id: string): Promise<void> {
     const item = this.page.locator(`[id="datasetForm:${id}"]`);
-    await openDropdown(this.editButton, item);
+    await openPopup(this.editButton, item);
     await item.click();
   }
 
@@ -35,7 +35,7 @@ export class DatasetPage {
     const permissions = this.page
       .locator("li.dropdown-submenu a", { hasText: "Permissions" })
       .first();
-    await openDropdown(this.editButton, permissions);
+    await openPopup(this.editButton, permissions);
     await permissions.hover();
     const id = kind === "dataset" ? "manageDatasetPermissions" : "manageFilePermissions";
     await this.page.locator(`[id="datasetForm:${id}"]`).click();
@@ -52,8 +52,9 @@ export class DatasetPage {
   }
 
   async publish(): Promise<void> {
-    await this.page.getByRole("link", { name: "Publish Dataset" }).click();
-    await this.page.locator('[id="datasetForm:releaseDatasetButton"]').click();
+    const release = this.page.locator('[id="datasetForm:releaseDatasetButton"]');
+    await openPopup(this.page.getByRole("link", { name: "Publish Dataset" }), release);
+    await release.click();
     // Dataverse locks the dataset while it finalizes the publish, then
     // reloads the page. The Publish link vanishes as soon as the lock starts,
     // so wait for the released-version label ("Version 1.0") instead.
@@ -74,11 +75,11 @@ export class DatasetPage {
   }
 
   async delete(): Promise<void> {
-    await this.openEditMenuItem("deleteDataset");
-    await this.page
+    const confirm = this.page
       .locator('[id="datasetForm:deleteConfirmation"]')
-      .getByRole("button", { name: "Continue" })
-      .click();
+      .getByRole("button", { name: "Continue" });
+    await openPopup(() => this.openEditMenuItem("deleteDataset"), confirm);
+    await confirm.click();
     await this.page.waitForURL((url) => !url.pathname.includes("dataset.xhtml"));
   }
 }

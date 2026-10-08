@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { openDropdown } from "../dropdown";
+import { openPopup } from "../popup";
 import { env } from "../env";
 
 /** Path of a collection page from its alias, or the configured root collection. */
@@ -35,7 +35,7 @@ export class CollectionPage {
    */
   async openEditMenuItem(id: string): Promise<void> {
     const item = this.page.locator(`[id$="${id}"]`).first();
-    await openDropdown(this.editButton, item);
+    await openPopup(this.editButton, item);
     await item.click();
   }
 
@@ -52,11 +52,11 @@ export class CollectionPage {
   }
 
   async publish(): Promise<void> {
-    await this.page.getByRole("button", { name: "Publish" }).click();
-    await this.page
+    const confirm = this.page
       .locator("button:visible")
-      .filter({ has: this.page.locator("span", { hasText: "Continue" }) })
-      .click();
+      .filter({ has: this.page.locator("span", { hasText: "Continue" }) });
+    await openPopup(this.page.getByRole("button", { name: "Publish" }), confirm);
+    await confirm.click();
     await expect(this.successAlert).toContainText("Your dataverse is now public.");
   }
 
@@ -70,11 +70,11 @@ export class CollectionPage {
 
   async delete(): Promise<void> {
     const from = new URL(this.page.url()).pathname;
-    await this.openEditMenuItem("deleteDataset");
-    await this.page
+    const confirm = this.page
       .locator('[id$="deleteDvConfirm"]')
-      .getByRole("button", { name: "Continue" })
-      .click();
+      .getByRole("button", { name: "Continue" });
+    await openPopup(() => this.openEditMenuItem("deleteDataset"), confirm);
+    await confirm.click();
     // Dataverse redirects to the parent collection once the delete succeeds.
     await this.page.waitForURL((url) => url.pathname !== from);
   }
