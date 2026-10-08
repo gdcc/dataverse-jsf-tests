@@ -1,5 +1,6 @@
 import { expect, test } from "../../lib/fixtures";
 import { DatasetPage } from "../../lib/pages/dataset-page";
+import { openPopup } from "../../lib/popup";
 import { files } from "../../lib/test-data";
 
 test("Preview URL: create, open anonymously, disable", async ({
@@ -8,9 +9,10 @@ test("Preview URL: create, open anonymously, disable", async ({
   createDataset,
 }) => {
   await createDataset({ files: [files.sampleText, files.sampleText2] });
-  await new DatasetPage(page).openEditMenuItem("privateUrl");
-
-  await page.getByRole("button", { name: "Create General Preview URL" }).click();
+  const datasetPage = new DatasetPage(page);
+  const create = page.getByRole("button", { name: "Create General Preview URL" });
+  await openPopup(() => datasetPage.openEditMenuItem("privateUrl"), create);
+  await create.click();
   const urlText = page.locator("div.highlight p span");
   await expect(urlText).toContainText("previewurl.xhtml");
   const previewUrl = (await urlText.innerText()).trim();
@@ -36,8 +38,9 @@ test("Preview URL: create, open anonymously, disable", async ({
 
   await test.step("disable it", async () => {
     // The Preview URL dialog is still open on the original page.
-    await page.getByRole("button", { name: "Disable General Preview URL" }).click();
-    await page.getByRole("button", { name: "Yes, Disable General Preview URL" }).click();
+    const confirm = page.getByRole("button", { name: "Yes, Disable General Preview URL" });
+    await openPopup(page.getByRole("button", { name: "Disable General Preview URL", exact: true }), confirm);
+    await confirm.click();
     await expect(
       page.getByText(
         "You have successfully disabled the Preview URL for this unpublished dataset.",

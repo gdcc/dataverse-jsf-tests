@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "../../lib/fixtures";
 import { uniqueName } from "../../lib/naming";
 import { CollectionPage } from "../../lib/pages/collection-page";
+import { openPopup } from "../../lib/popup";
 
 test("Guestbook: create, download responses, delete", async ({
   page,
@@ -20,11 +21,11 @@ test("Guestbook: create, download responses, delete", async ({
       .filter({ has: p.locator('td[role="gridcell"]', { hasText: guestbookName }) });
 
   const deleteGuestbook = async (p: Page) => {
-    await guestbookRow(p).locator('[data-original-title="Delete"]').click();
-    await p
+    const confirm = p
       .locator('[id="manageGuestbooksForm:deleteGuestbookConfirm"]')
-      .getByRole("button", { name: "Continue" })
-      .click();
+      .getByRole("button", { name: "Continue" });
+    await openPopup(guestbookRow(p).locator('[data-original-title="Delete"]'), confirm);
+    await confirm.click();
     await expect(guestbookRow(p)).toHaveCount(0);
   };
 

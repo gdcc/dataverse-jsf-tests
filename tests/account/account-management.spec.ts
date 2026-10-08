@@ -1,4 +1,5 @@
 import { test, expect } from "../../lib/fixtures";
+import { openPopup } from "../../lib/popup";
 
 /**
  * Exercises My Data, Notifications, Account Information, and API Token
@@ -15,11 +16,10 @@ test(
     // ─────────────────────────────────────────────
     // 1. My Data
     // ─────────────────────────────────────────────
-    await userMenuTrigger.click();
     const dropdownMenu = page
       .locator("ul.dropdown-menu")
       .filter({ has: page.getByRole("link", { name: "Log Out" }) });
-    await expect(dropdownMenu).toBeVisible();
+    await openPopup(userMenuTrigger, dropdownMenu);
 
     await dropdownMenu.getByRole("link", { name: "My Data" }).click();
     await expect(page).toHaveURL(
@@ -38,8 +38,7 @@ test(
     }
 
     await page.goto("/");
-    await userMenuTrigger.click();
-    await expect(dropdownMenu).toBeVisible();
+    await openPopup(userMenuTrigger, dropdownMenu);
 
     // ─────────────────────────────────────────────
     // 2. Notifications
@@ -53,8 +52,7 @@ test(
     ).toBeVisible();
 
     await page.goto("/");
-    await userMenuTrigger.click();
-    await expect(dropdownMenu).toBeVisible();
+    await openPopup(userMenuTrigger, dropdownMenu);
 
     // ─────────────────────────────────────────────
     // 3. Account Information
@@ -76,8 +74,7 @@ test(
     await expect(page.getByText(/Verified/i).first()).toBeVisible();
 
     await page.goto("/");
-    await userMenuTrigger.click();
-    await expect(dropdownMenu).toBeVisible();
+    await openPopup(userMenuTrigger, dropdownMenu);
 
     // ─────────────────────────────────────────────
     // 4. API Token
