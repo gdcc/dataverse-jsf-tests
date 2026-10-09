@@ -8,14 +8,14 @@ in sorted order, and re-encodes the result as an MPEG-4 file (H.264 + AAC).
 
 Usage
 -----
-    # Unified suite (all tests)
-    python scripts/combine_videos.py --suite suite
+    # All Chromium tests
+    python scripts/combine_videos.py --suite chromium
 
     # Custom output filename
-    python scripts/combine_videos.py --suite suite --output my_demo.mp4
+    python scripts/combine_videos.py --suite chromium --output my_demo.mp4
 
     # Absolute output path
-    python scripts/combine_videos.py --suite suite --output ~/Desktop/demo.mp4
+    python scripts/combine_videos.py --suite chromium --output ~/Desktop/demo.mp4
 
 Requirements
 ------------

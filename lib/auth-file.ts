@@ -1,22 +1,20 @@
+import { env } from "./env";
+
 /**
- * Derives a per-endpoint, per-browser auth storage-state file path from
- * BASE_URL and an optional browser name.
+ * Per-endpoint, per-browser file the logged-in session is saved to.
  *
  * Example:
- *   BASE_URL=https://dataverse-staging.rdmc.unc.edu, browser="firefox"
- *   → playwright/.auth/dataverse-staging-rdmc-unc-edu-firefox.json
+ *   BASE_URL=https://dataverse.example.edu, browser="firefox"
+ *   → playwright/.auth/dataverse-example-edu-firefox.json
  *
- * This ensures switching BASE_URL between instances, or running against
- * multiple browsers, never overwrites a previously saved session — each
- * endpoint + browser combination keeps its own cookie jar.
+ * Switching BASE_URL between instances, or running several browsers, never
+ * overwrites another session — each endpoint + browser keeps its own cookies.
  */
-export function authFilePath(browser?: string): string {
-  const url = (process.env.BASE_URL ?? "default").trim();
-  const slug = url
-    .replace(/^https?:\/\//, "") // strip scheme
-    .replace(/\/$/, "") // strip trailing slash
-    .replace(/[^a-z0-9]/gi, "-") // any non-alphanumeric → dash
+export function authFilePath(browser: string): string {
+  const slug = (env.baseURL ?? "default")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
+    .replace(/[^a-z0-9]/gi, "-")
     .toLowerCase();
-  const suffix = browser ? `-${browser}` : "";
-  return `playwright/.auth/${slug}${suffix}.json`;
+  return `playwright/.auth/${slug}-${browser}.json`;
 }
