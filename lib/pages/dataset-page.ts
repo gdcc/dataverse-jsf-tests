@@ -44,11 +44,19 @@ export class DatasetPage {
     );
   }
 
-  /** Clicks the "select all files" checkbox in the files table. */
+  /**
+   * Ticks the "select all files" checkbox in the files table. Under load the
+   * click can land before the table's handler is wired and not register, so
+   * click again until the box shows as ticked (never clicking a ticked box,
+   * which would untick it).
+   */
   async selectAllFiles(): Promise<void> {
     const box = this.filesTable.locator(".ui-chkbox-all .ui-chkbox-box").first();
-    await box.click();
-    await expect(box).toHaveClass(/ui-state-active/);
+    await expect(async () => {
+      const ticked = /ui-state-active/.test((await box.getAttribute("class")) ?? "");
+      if (!ticked) await box.click({ timeout: 5_000 });
+      await expect(box).toHaveClass(/ui-state-active/, { timeout: 2_000 });
+    }).toPass({ timeout: 30_000 });
   }
 
   async publish(): Promise<void> {
